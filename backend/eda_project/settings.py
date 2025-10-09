@@ -111,5 +111,5 @@ REST_FRAMEWORK = {
 }
 
 # Dataset path
-DATASET_PATH = os.path.join(BASE_DIR.parent, 'Technical Evaluation.csv')
+DATASET_PATH = os.path.join(BASE_DIR, 'eda_project', 'Technical Evaluation.csv')
 

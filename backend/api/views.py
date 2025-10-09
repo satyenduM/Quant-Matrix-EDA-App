@@ -88,6 +88,7 @@ def get_filtered_data(request):
         df['YearMonth'] = df['Year'].astype(str) + '-' + df['Month'].astype(str).str.zfill(2)
         monthly_trend = df.groupby(['Year', 'Month', 'YearMonth']).agg({
             'SalesValue': 'sum',
+            'Volume': 'sum',
             'date': 'first'
         }).reset_index()
         monthly_trend = monthly_trend.sort_values(['Year', 'Month'])

@@ -105,7 +105,7 @@ function App() {
               className={activeTab === 'brand-x-pack' ? 'tab active' : 'tab'}
               onClick={() => setActiveTab('brand-x-pack')}
             >
-              Brand X Pack Type X PPC
+              Brand X Pack Type X PPG
             </button>
             <button 
               className={activeTab === 'correlation' ? 'tab active' : 'tab'}
