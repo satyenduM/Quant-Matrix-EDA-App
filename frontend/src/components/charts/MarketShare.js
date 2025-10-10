@@ -70,7 +70,7 @@ const MarketShare = ({ data, loading }) => {
     return () => document.removeEventListener('click', handler);
   }, [dropdownOpen]);
 
-  const source = data?.marketShareSales ?? [];
+  const source = useMemo(() => data?.marketShareSales ?? [], [data?.marketShareSales]);
   const rows = useMemo(() => {
     const items = source.map(d => ({ label: d.Brand, value: viewType === 'sales' ? Number(d.SalesValue) : Number(d.Volume) }));
     // Numeric brand order: Brand 1, Brand 2, ...; fallback alphabetical
@@ -90,14 +90,14 @@ const MarketShare = ({ data, loading }) => {
 
   const displayRows = rows.length > 0 ? rows : lastRows;
 
-  const total = useMemo(() => (displayRows || []).reduce((s, r) => s + (r.value || 0), 0), [rows, lastRows]);
-  const legendItems = useMemo(() => (displayRows || []).map(r => ({ label: r.label, color: brandColor(r.label) })), [rows, lastRows]);
+  const total = useMemo(() => (displayRows || []).reduce((s, r) => s + (r.value || 0), 0), [displayRows]);
+  const legendItems = useMemo(() => (displayRows || []).map(r => ({ label: r.label, color: brandColor(r.label) })), [displayRows]);
 
   // Trigger animation on data/metric change without remounting the chart
   const animId = useMemo(() => {
     const sig = (displayRows || []).map(r => `${r.label}:${r.value}`).join('|');
     return `${viewType}::${sig}`;
-  }, [rows, lastRows, viewType]);
+  }, [displayRows, viewType]);
 
   // Track whether we've shown data at least once
   const [hasShownData, setHasShownData] = useState(false);

@@ -10,6 +10,7 @@ import {
   Rectangle
 } from 'recharts';
 import './ChartStyles.css';
+import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
 
 // Helpers
@@ -74,7 +75,6 @@ const YearBrandSales = ({ data, loading }) => {
   const [hoveredBrand, setHoveredBrand] = useState(null);
 
   // Preserve last computed structures to avoid refresh/unmount
-  const [lastBrands, setLastBrands] = useState([]);
   const [lastYears, setLastYears] = useState([]);
   const [lastRows, setLastRows] = useState([]);
 
@@ -88,15 +88,15 @@ const YearBrandSales = ({ data, loading }) => {
     return () => document.removeEventListener('click', onDocClick);
   }, [dropdownOpen]);
 
-  const source = selectedMetric === 'value' ? (data?.yearBrandSales ?? []) : (data?.volumeByBrandYear ?? []);
+  const source = useMemo(() => 
+    selectedMetric === 'value' ? (data?.yearBrandSales ?? []) : (data?.volumeByBrandYear ?? []),
+    [selectedMetric, data?.yearBrandSales, data?.volumeByBrandYear]
+  );
 
   // Brands and years (unconditional hooks)
   const brands = useMemo(() => sortBrands([...new Set(source.map(d => d.Brand))]), [source]);
   const years = useMemo(() => [...new Set(source.map(d => d.Year))].sort(), [source]);
 
-  useEffect(() => {
-    if (!loading && brands.length > 0) setLastBrands(brands);
-  }, [loading, brands]);
   useEffect(() => {
     if (!loading && years.length > 0) setLastYears(years);
   }, [loading, years]);
@@ -118,24 +118,24 @@ const YearBrandSales = ({ data, loading }) => {
     if (!loading && rows.length > 0) setLastRows(rows);
   }, [loading, rows]);
 
-  const displayBrands = brands.length > 0 ? brands : lastBrands;
   const displayYears = years.length > 0 ? years : lastYears;
   const displayRows = rows.length > 0 ? rows : lastRows;
 
-  // Y domain (ceil to nearest 10M) with sticky max to avoid axis jumps
+  // Dynamic Y-axis scaling based on current filtered data
   const computedMax = useMemo(() => {
     const allValues = (displayRows || []).flatMap(r => (displayYears || []).map(y => Number(r[y]) || 0));
     const max = Math.max(0, ...allValues);
-    const step = 10_000_000; // 10M
-    return Math.ceil(max / step) * step || step;
+    
+    // Add 10% padding above the maximum value for better visualization
+    const paddedMax = max * 1.1;
+    
+    // Round to nearest 10M for clean tick marks
+    const step = 10_000_000;
+    return Math.ceil(paddedMax / step) * step || step;
   }, [displayRows, displayYears]);
 
-  const [stickyMax, setStickyMax] = useState(0);
-  useEffect(() => {
-    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
-  }, [computedMax]);
-
-  const yDomain = [0, stickyMax || computedMax];
+  const animatedMax = useTweenedNumber(computedMax, 400, 'easeOutCubic');
+  const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Stable animation id to smoothly transition between metrics and data changes
   const animId = useMemo(() => {

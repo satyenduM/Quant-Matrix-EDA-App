@@ -9,6 +9,7 @@ import {
   Tooltip
 } from 'recharts';
 import './ChartStyles.css';
+import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
 
 // Helpers (same style as SalesByYear)
@@ -120,40 +121,38 @@ const VolumeByYear = ({ data, loading }) => {
   const displayYears = years.length > 0 ? years : lastYears;
   const displayRows = rows.length > 0 ? rows : lastRows;
 
+  // Dynamic axis scaling based on current filtered data
   const computedMax = useMemo(() => {
     const totals = (displayRows || []).map((r) => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0));
     const max = Math.max(0, ...totals);
+    const paddedMax = max * 1.1;
     const step = 5_000_000;
-    return Math.ceil(max / step) * step || step;
+    return Math.ceil(paddedMax / step) * step || step;
   }, [displayRows, displayBrands]);
 
-  const [stickyMax, setStickyMax] = useState(0);
-  useEffect(() => {
-    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
-  }, [computedMax]);
-
+  // Animate axis max for smooth auto-scaling
+  const animatedMax = useTweenedNumber(computedMax, 200, 'easeOutCubic');
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
 
   // Animation key tied to data snapshot
   const animId = useMemo(() => {
     const totals = (displayRows || []).map(r => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0)).join('-');
-    return `${(displayBrands || []).join('|')}::${(displayYears || []).join('|')}::${stickyMax}::${totals}`;
-  }, [displayBrands, displayYears, stickyMax, displayRows]);
+    return `${(displayBrands || []).join('|')}::${(displayYears || []).join('|')}::${computedMax}::${totals}`;
+  }, [displayBrands, displayYears, computedMax, displayRows]);
 
   // Force BarChart to re-evaluate stack order when brand order changes
   const brandOrderKey = useMemo(() => (displayBrands || []).join('|'), [displayBrands]);
 
+  // Track whether we've shown data at least once; avoid overlay after initial
   const [hasShownData, setHasShownData] = useState(false);
   useEffect(() => {
     if ((displayRows || []).length > 0) setHasShownData(true);
   }, [displayRows]);
-
   const initialLoading = loading && displayRows.length === 0;
   if (initialLoading) {
     return <ChartSkeleton variant="bars-h" height={300} />;
   }
   if (!loading && displayRows.length === 0) return <div className="chart-placeholder">No data available</div>;
-
   return (
     <div className="chart-wrapper">
       <div style={{ fontSize: 18, fontWeight: 600, color: '#333', marginBottom: 16 }}>Volume Contribution (KG)</div>
@@ -161,7 +160,7 @@ const VolumeByYear = ({ data, loading }) => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={brandOrderKey} data={displayRows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
             <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={xFormat} domain={[0, stickyMax || computedMax]} tickLine={false} axisLine={false} />
+            <XAxis type="number" tickFormatter={xFormat} domain={[0, Math.max(0, Math.round(animatedMax))]} tickLine={false} axisLine={false} />
             <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} tickMargin={2} />
             <Tooltip
               content={(props) => (

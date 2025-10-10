@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import './ChartStyles.css';
 import ChartSkeleton from './ChartSkeleton';
+import useTweenedNumber from './animations/useTweenedNumber';
 
 // Helpers
 const toMillions = (v) => v / 1_000_000;
@@ -85,7 +86,7 @@ const CustomLegend = ({ items }) => (
 );
 
 const SalesByYear = ({ data, loading }) => {
-  const raw = data?.salesByBrandYear ?? [];
+  const raw = useMemo(() => data?.salesByBrandYear ?? [], [data?.salesByBrandYear]);
   const [hoveredKey, setHoveredKey] = useState(null);
 
   // Preserve last computed structures to avoid refresh/unmount
@@ -126,19 +127,21 @@ const SalesByYear = ({ data, loading }) => {
   const displayYears = years.length > 0 ? years : lastYears;
   const displayRows = rows.length > 0 ? rows : lastRows;
 
-  // Compute nice domain upper bound (rounded to nearest 5M)
+  // Dynamic axis scaling based on current filtered data
   const computedMax = useMemo(() => {
     const totals = (displayRows || []).map((r) => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0));
     const max = Math.max(0, ...totals);
-    const step = 5_000_000; // 5M steps
-    return Math.ceil(max / step) * step || step;
+    
+    // Add 10% padding above the maximum value for better visualization
+    const paddedMax = max * 1.1;
+    
+    // Round to nearest 5M for clean tick marks
+    const step = 5_000_000;
+    return Math.ceil(paddedMax / step) * step || step;
   }, [displayRows, displayBrands]);
 
-  // Sticky domain to keep axis steady across quick filter changes
-  const [stickyMax, setStickyMax] = useState(0);
-  useEffect(() => {
-    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
-  }, [computedMax]);
+  // Animate axis max for smooth auto-scaling
+  const animatedMax = useTweenedNumber(computedMax, 200, 'easeOutCubic');
 
   // Legend items
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
@@ -146,8 +149,8 @@ const SalesByYear = ({ data, loading }) => {
   // Animation key that changes when data snapshot changes
   const animId = useMemo(() => {
     const totals = (displayRows || []).map(r => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0)).join('-');
-    return `${(displayBrands || []).join('|')}::${(displayYears || []).join('|')}::${stickyMax}::${totals}`;
-  }, [displayBrands, displayYears, stickyMax, displayRows]);
+    return `${(displayBrands || []).join('|')}::${(displayYears || []).join('|')}::${computedMax}::${totals}`;
+  }, [displayBrands, displayYears, computedMax, displayRows]);
 
   // Force BarChart to re-evaluate stack order when brand order changes
   const brandOrderKey = useMemo(() => (displayBrands || []).join('|'), [displayBrands]);
@@ -171,7 +174,7 @@ const SalesByYear = ({ data, loading }) => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={brandOrderKey} data={displayRows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
             <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={xFormat} domain={[0, stickyMax || computedMax]} tickLine={false} axisLine={false} />
+            <XAxis type="number" tickFormatter={xFormat} domain={[0, Math.max(0, Math.round(animatedMax))]} tickLine={false} axisLine={false} />
             <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} tickMargin={2} />
             <Tooltip
               content={(props) => (

@@ -1,5 +1,6 @@
 import React from 'react';
 import './Dashboard.css';
+import KPIHeader from './KPIHeader';
 import SalesByYear from './charts/SalesByYear';
 import VolumeByYear from './charts/VolumeByYear';
 import YearBrandSales from './charts/YearBrandSales';
@@ -17,6 +18,8 @@ const Dashboard = ({ data, loading }) => {
 
   return (
     <div className="dashboard">
+      <KPIHeader data={data} loading={loading} />
+      
       <div className="dashboard-row">
         <div className="chart-container half">
           <SalesByYear data={data} loading={loading} />

@@ -1,0 +1,118 @@
+.kpi-header {
+  margin-bottom: 20px;
+}
+
+.kpi-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px;
+  border-radius: 6px;
+  background-color: #fafafa;
+  border: 1px solid #e5e5e5;
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  background-color: #f5f5f5;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+}
+
+.kpi-value.positive {
+  color: #059669;
+}
+
+.kpi-value.negative {
+  color: #dc2626;
+}
+
+/* Skeleton loading states */
+.kpi-skeleton {
+  width: 100%;
+}
+
+.kpi-skeleton-title {
+  height: 16px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.kpi-skeleton-value {
+  height: 28px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .kpi-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  
+  .kpi-card {
+    padding: 12px;
+  }
+  
+  .kpi-title {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  
+  .kpi-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

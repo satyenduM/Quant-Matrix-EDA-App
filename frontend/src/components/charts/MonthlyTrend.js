@@ -9,6 +9,7 @@ import {
   Tooltip
 } from 'recharts';
 import './ChartStyles.css';
+import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
 
 function formatMillions(value) {
@@ -67,20 +68,21 @@ const MonthlyTrend = ({ data, loading }) => {
     return `${selectedMetric}::${vals}`;
   }, [displayData, selectedMetric]);
 
-  // Stabilize Y-axis max across quick changes to avoid jump
+  // Dynamic Y-axis scaling based on current filtered data
   const currentValues = (displayData || []).map(d => selectedMetric === 'value' ? d.value : d.volume);
   const computedMax = useMemo(() => {
     const maxValue = Math.max(0, ...currentValues);
-    const step = 1_000_000; // 1M steps for neat ticks
-    return Math.ceil(maxValue / step) * step || step;
+    
+    // Add 10% padding above the maximum value for better visualization
+    const paddedMax = maxValue * 1.1;
+    
+    // Round to nearest 1M for clean tick marks
+    const step = 1_000_000;
+    return Math.ceil(paddedMax / step) * step || step;
   }, [currentValues]);
 
-  const [stickyMax, setStickyMax] = useState(0);
-  useEffect(() => {
-    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
-  }, [computedMax]);
-
-  const yDomain = [0, stickyMax || computedMax];
+  const animatedMax = useTweenedNumber(computedMax, 400, 'easeOutCubic');
+  const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Horizontal scroll handling + indicator
   const scrollRef = useRef(null);
