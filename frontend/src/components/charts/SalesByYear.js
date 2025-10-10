@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -44,6 +44,9 @@ const brandColor = (brand) => {
   return fallbackPalette[h % fallbackPalette.length];
 };
 
+// Animation constants for smooth, short, meaningful motion
+const ANIM = { duration: 400, easing: 'ease-out' };
+
 const makeRange = (row, dataKey, order) => {
   const idx = order.indexOf(dataKey);
   if (idx < 0) return null;
@@ -85,9 +88,22 @@ const SalesByYear = ({ data, loading }) => {
   const raw = data?.salesByBrandYear ?? [];
   const [hoveredKey, setHoveredKey] = useState(null);
 
+  // Preserve last computed structures to avoid refresh/unmount
+  const [lastBrands, setLastBrands] = useState([]);
+  const [lastYears, setLastYears] = useState([]);
+  const [lastRows, setLastRows] = useState([]);
+
   // Prepare brand and year lists (hooks must be unconditional)
   const brands = useMemo(() => sortBrands([...new Set(raw.map(d => d.Brand))]), [raw]);
   const years = useMemo(() => [...new Set(raw.map(d => d.Year))].sort(), [raw]);
+
+  // Update last known brands/years when valid and not loading
+  useEffect(() => {
+    if (!loading && brands.length > 0) setLastBrands(brands);
+  }, [loading, brands]);
+  useEffect(() => {
+    if (!loading && years.length > 0) setLastYears(years);
+  }, [loading, years]);
 
   // Transform data for Recharts rows
   const rows = useMemo(() => {
@@ -102,46 +118,70 @@ const SalesByYear = ({ data, loading }) => {
     });
   }, [raw, years, brands]);
 
+  useEffect(() => {
+    if (!loading && rows.length > 0) setLastRows(rows);
+  }, [loading, rows]);
+
+  const displayBrands = brands.length > 0 ? brands : lastBrands;
+  const displayYears = years.length > 0 ? years : lastYears;
+  const displayRows = rows.length > 0 ? rows : lastRows;
+
   // Compute nice domain upper bound (rounded to nearest 5M)
-  const domainMax = useMemo(() => {
-    const totals = rows.map((r) => brands.reduce((s, k) => s + (Number(r[k]) || 0), 0));
+  const computedMax = useMemo(() => {
+    const totals = (displayRows || []).map((r) => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0));
     const max = Math.max(0, ...totals);
     const step = 5_000_000; // 5M steps
     return Math.ceil(max / step) * step || step;
-  }, [rows, brands]);
+  }, [displayRows, displayBrands]);
+
+  // Sticky domain to keep axis steady across quick filter changes
+  const [stickyMax, setStickyMax] = useState(0);
+  useEffect(() => {
+    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
+  }, [computedMax]);
 
   // Legend items
-  const legendItems = useMemo(() => brands.map((b) => ({ label: b, color: brandColor(b) })), [brands]);
+  const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
 
   // Animation key that changes when data snapshot changes
   const animId = useMemo(() => {
-    const totals = rows.map(r => brands.reduce((s, k) => s + (Number(r[k]) || 0), 0)).join('-');
-    return `${brands.join('|')}::${years.join('|')}::${domainMax}::${totals}`;
-  }, [brands, years, domainMax, rows]);
+    const totals = (displayRows || []).map(r => (displayBrands || []).reduce((s, k) => s + (Number(r[k]) || 0), 0)).join('-');
+    return `${(displayBrands || []).join('|')}::${(displayYears || []).join('|')}::${stickyMax}::${totals}`;
+  }, [displayBrands, displayYears, stickyMax, displayRows]);
 
-  if (loading || (!data && rows.length === 0)) {
+  // Force BarChart to re-evaluate stack order when brand order changes
+  const brandOrderKey = useMemo(() => (displayBrands || []).join('|'), [displayBrands]);
+
+  // Track whether we've shown data at least once; avoid overlay after initial
+  const [hasShownData, setHasShownData] = useState(false);
+  useEffect(() => {
+    if ((displayRows || []).length > 0) setHasShownData(true);
+  }, [displayRows]);
+
+  const initialLoading = loading && displayRows.length === 0;
+  if (initialLoading) {
     return <ChartSkeleton variant="bars-h" height={300} />;
   }
-  if (rows.length === 0) return <div className="chart-placeholder">No data available</div>;
+  if (!loading && displayRows.length === 0) return <div className="chart-placeholder">No data available</div>;
 
   return (
     <div className="chart-wrapper">
       <div style={{ fontSize: 18, fontWeight: 600, color: '#333', marginBottom: 16 }}>Sales Value (EURO)</div>
       <div style={{ width: '100%', height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
+          <BarChart key={brandOrderKey} data={displayRows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
             <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={xFormat} domain={[0, domainMax]} tickLine={false} axisLine={false} />
+            <XAxis type="number" tickFormatter={xFormat} domain={[0, stickyMax || computedMax]} tickLine={false} axisLine={false} />
             <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} tickMargin={2} />
             <Tooltip
               content={(props) => (
-                <CustomTooltip {...props} order={brands} hoveredKey={hoveredKey} />
+                <CustomTooltip {...props} order={displayBrands} hoveredKey={hoveredKey} />
               )}
               cursor={{ fill: 'rgba(0,0,0,0.04)' }}
               isAnimationActive={false}
             />
 
-            {brands.map((b, i) => (
+            {(displayBrands || []).map((b, i) => (
               <Bar
                 key={b}
                 dataKey={b}
@@ -150,11 +190,12 @@ const SalesByYear = ({ data, loading }) => {
                 fill={brandColor(b)}
                 barSize={26}
                 isAnimationActive
+                isUpdateAnimationActive
                 animationId={animId}
-                animationDuration={500}
-                animationEasing="ease-in-out"
+                animationDuration={ANIM.duration}
+                animationEasing={ANIM.easing}
                 radius={
-                  i === 0 ? [8, 0, 0, 8] : i === brands.length - 1 ? [0, 8, 8, 0] : 0
+                  i === 0 ? [8, 0, 0, 8] : i === (displayBrands.length - 1) ? [0, 8, 8, 0] : 0
                 }
                 onMouseEnter={() => setHoveredKey(b)}
                 onMouseMove={() => setHoveredKey(b)}
@@ -164,6 +205,11 @@ const SalesByYear = ({ data, loading }) => {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {loading && !hasShownData && (
+        <div className="chart-overlay">
+          <ChartSkeleton variant="bars-h" height={300} />
+        </div>
+      )}
       <CustomLegend items={legendItems} />
     </div>
   );

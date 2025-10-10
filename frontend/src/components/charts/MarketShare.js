@@ -29,6 +29,9 @@ const brandColor = (brand) => {
   return fallback[h % fallback.length];
 };
 
+// Animation constants (short, meaningful, ease-out)
+const ANIM = { duration: 400, easing: 'ease-out' };
+
 const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   if (!active || !payload || !payload.length) return null;
   const p = payload[0];
@@ -69,16 +72,44 @@ const MarketShare = ({ data, loading }) => {
 
   const source = data?.marketShareSales ?? [];
   const rows = useMemo(() => {
-    return source.map(d => ({ label: d.Brand, value: viewType === 'sales' ? Number(d.SalesValue) : Number(d.Volume) }));
+    const items = source.map(d => ({ label: d.Brand, value: viewType === 'sales' ? Number(d.SalesValue) : Number(d.Volume) }));
+    // Numeric brand order: Brand 1, Brand 2, ...; fallback alphabetical
+    return items.sort((a, b) => {
+      const na = /brand\s*(\d+)/i.exec(a.label);
+      const nb = /brand\s*(\d+)/i.exec(b.label);
+      if (na && nb) return parseInt(na[1], 10) - parseInt(nb[1], 10);
+      return a.label.localeCompare(b.label);
+    });
   }, [source, viewType]);
 
-  const total = useMemo(() => rows.reduce((s, r) => s + (r.value || 0), 0), [rows]);
-  const legendItems = useMemo(() => rows.map(r => ({ label: r.label, color: brandColor(r.label) })), [rows]);
+  // Preserve last non-empty rows to avoid unmounting on loading
+  const [lastRows, setLastRows] = useState([]);
+  useEffect(() => {
+    if (!loading && rows.length > 0) setLastRows(rows);
+  }, [loading, rows]);
 
-  if (loading || (!data && rows.length === 0)) {
+  const displayRows = rows.length > 0 ? rows : lastRows;
+
+  const total = useMemo(() => (displayRows || []).reduce((s, r) => s + (r.value || 0), 0), [rows, lastRows]);
+  const legendItems = useMemo(() => (displayRows || []).map(r => ({ label: r.label, color: brandColor(r.label) })), [rows, lastRows]);
+
+  // Trigger animation on data/metric change without remounting the chart
+  const animId = useMemo(() => {
+    const sig = (displayRows || []).map(r => `${r.label}:${r.value}`).join('|');
+    return `${viewType}::${sig}`;
+  }, [rows, lastRows, viewType]);
+
+  // Track whether we've shown data at least once
+  const [hasShownData, setHasShownData] = useState(false);
+  useEffect(() => {
+    if ((displayRows || []).length > 0) setHasShownData(true);
+  }, [displayRows]);
+
+  const initialLoading = loading && (displayRows.length === 0);
+  if (initialLoading) {
     return <ChartSkeleton variant="donut" height={350} />;
   }
-  if (rows.length === 0) {
+  if (!loading && displayRows.length === 0) {
     return <div className="chart-placeholder">No data available</div>;
   }
 
@@ -136,16 +167,21 @@ const MarketShare = ({ data, loading }) => {
           <PieChart>
             <Tooltip content={(props) => <CustomTooltip {...props} viewType={viewType} total={total} />} isAnimationActive={false} />
             <Pie
-              data={rows}
+              data={displayRows}
               dataKey="value"
               nameKey="label"
               innerRadius={80}
               outerRadius={110}
               paddingAngle={2}
+              isAnimationActive
+              isUpdateAnimationActive
+              animationId={animId}
+              animationDuration={ANIM.duration}
+              animationEasing={ANIM.easing}
               onMouseEnter={(_, idx) => setActiveIndex(idx)}
               onMouseLeave={() => setActiveIndex(null)}
             >
-              {rows.map((entry, index) => (
+              {displayRows.map((entry, index) => (
                 <Cell
                   key={`slice-${entry.label}`}
                   fill={brandColor(entry.label)}
@@ -157,6 +193,13 @@ const MarketShare = ({ data, loading }) => {
           </PieChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Avoid overlay during filter changes; only use for first load */}
+      {loading && !hasShownData && (
+        <div className="chart-overlay">
+          <ChartSkeleton variant="donut" height={350} />
+        </div>
+      )}
 
       <CustomLegend items={legendItems} />
     </div>

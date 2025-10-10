@@ -19,6 +19,9 @@ function formatMillions(value) {
   return `${formatted}M`;
 }
 
+// Animation constants for smooth transitions
+const ANIM = { duration: 400, easing: 'ease-out' };
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
@@ -50,15 +53,34 @@ const MonthlyTrend = ({ data, loading }) => {
     });
   }, [data]);
 
-  const currentValues = processedData.map(d => selectedMetric === 'value' ? d.value : d.volume);
-  const minValue = Math.min(...currentValues);
-  const maxValue = Math.max(...currentValues);
-  const range = Math.max(1, maxValue - minValue);
-  const padding = range * 0.1;
-  const yDomain = [
-    Math.max(0, Math.floor((minValue - padding) / 1000000) * 1000000),
-    Math.ceil((maxValue + padding) / 1000000) * 1000000
-  ];
+  // Preserve last data to avoid unmounting/empties while loading
+  const [lastData, setLastData] = useState([]);
+  useEffect(() => {
+    if (!loading && processedData.length > 0) setLastData(processedData);
+  }, [loading, processedData]);
+
+  const displayData = processedData.length > 0 ? processedData : lastData;
+
+  // Stable animation id to animate line morph when metric changes or data updates
+  const animId = useMemo(() => {
+    const vals = (displayData || []).map(d => (selectedMetric === 'value' ? d.value : d.volume)).join(',');
+    return `${selectedMetric}::${vals}`;
+  }, [displayData, selectedMetric]);
+
+  // Stabilize Y-axis max across quick changes to avoid jump
+  const currentValues = (displayData || []).map(d => selectedMetric === 'value' ? d.value : d.volume);
+  const computedMax = useMemo(() => {
+    const maxValue = Math.max(0, ...currentValues);
+    const step = 1_000_000; // 1M steps for neat ticks
+    return Math.ceil(maxValue / step) * step || step;
+  }, [currentValues]);
+
+  const [stickyMax, setStickyMax] = useState(0);
+  useEffect(() => {
+    setStickyMax((prev) => Math.max(prev || 0, computedMax || 0));
+  }, [computedMax]);
+
+  const yDomain = [0, stickyMax || computedMax];
 
   // Horizontal scroll handling + indicator
   const scrollRef = useRef(null);
@@ -114,13 +136,18 @@ const MonthlyTrend = ({ data, loading }) => {
   }, [dropdownOpen]);
 
   // Show skeleton while loading or when data is pending (after hooks)
-  if (loading || (!data && processedData.length === 0)) {
+  const [hasShownData, setHasShownData] = useState(false);
+  useEffect(() => {
+    if ((displayData || []).length > 0) setHasShownData(true);
+  }, [displayData]);
+
+  if (loading && displayData.length === 0) {
     return <ChartSkeleton variant="line" height={320} />;
   }
 
   // Define a width that creates room to scroll if many months
   const pointWidthPx = 80; // width per month label
-  const chartWidthPx = Math.max(processedData.length * pointWidthPx, 900);
+  const chartWidthPx = Math.max((displayData || []).length * pointWidthPx, 900);
 
   const metricOptions = [
     { value: 'value', label: 'Value' },
@@ -175,14 +202,14 @@ const MonthlyTrend = ({ data, loading }) => {
           )}
         </div>
       </div>
-      {processedData.length === 0 ? (
+      {(displayData || []).length === 0 ? (
         <div className="chart-placeholder">No data available</div>
       ) : (
         <>
           <div ref={scrollRef} className="chart-scroll">
             <div style={{ width: `${chartWidthPx}px`, height: 320 }}>
               <ResponsiveContainer>
-                <LineChart data={processedData} margin={{ top: 10, right: 10, bottom: 30, left: 0 }}>
+                <LineChart data={displayData} margin={{ top: 10, right: 10, bottom: 30, left: 0 }}>
                   <CartesianGrid stroke="#eaeaea" vertical horizontal={true} />
                   <XAxis
                     dataKey="label"
@@ -209,11 +236,21 @@ const MonthlyTrend = ({ data, loading }) => {
                     strokeWidth={2}
                     dot={{ r: 3, stroke: '#fff', strokeWidth: 2, fill: '#22c55e' }}
                     activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#22c55e' }}
+                    isAnimationActive
+                    isUpdateAnimationActive
+                    animationId={animId}
+                    animationDuration={ANIM.duration}
+                    animationEasing={ANIM.easing}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
+          {loading && !hasShownData && (
+            <div className="chart-overlay">
+              <ChartSkeleton variant="line" height={320} />
+            </div>
+          )}
           <div className="chart-scrollbar">
             <div className="chart-scrollbar-track">
               <div className="chart-scrollbar-thumb" style={thumbStyle} />
