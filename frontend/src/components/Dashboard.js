@@ -6,8 +6,8 @@ import YearBrandSales from './charts/YearBrandSales';
 import MonthlyTrend from './charts/MonthlyTrend';
 import MarketShare from './charts/MarketShare';
 
-const Dashboard = ({ data }) => {
-  if (!data) {
+const Dashboard = ({ data, loading }) => {
+  if (!loading && !data) {
     return (
       <div className="dashboard-empty">
         <p>No data available. Please adjust your filters.</p>
@@ -19,25 +19,25 @@ const Dashboard = ({ data }) => {
     <div className="dashboard">
       <div className="dashboard-row">
         <div className="chart-container half">
-          <SalesByYear data={data} />
+          <SalesByYear data={data} loading={loading} />
         </div>
         <div className="chart-container half">
-          <VolumeByYear data={data} />
+          <VolumeByYear data={data} loading={loading} />
         </div>
       </div>
       
       <div className="dashboard-row">
         <div className="chart-container half">
-          <YearBrandSales data={data} />
+          <YearBrandSales data={data} loading={loading} />
         </div>
         <div className="chart-container half">
-          <MonthlyTrend data={data} />
+          <MonthlyTrend data={data} loading={loading} />
         </div>
       </div>
       
       <div className="dashboard-row">
         <div className="chart-container full">
-          <MarketShare data={data} />
+          <MarketShare data={data} loading={loading} />
         </div>
       </div>
     </div>

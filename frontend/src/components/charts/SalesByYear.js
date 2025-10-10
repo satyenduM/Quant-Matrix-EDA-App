@@ -9,6 +9,7 @@ import {
   Tooltip
 } from 'recharts';
 import './ChartStyles.css';
+import ChartSkeleton from './ChartSkeleton';
 
 // Helpers
 const toMillions = (v) => v / 1_000_000;
@@ -80,7 +81,7 @@ const CustomLegend = ({ items }) => (
   </div>
 );
 
-const SalesByYear = ({ data }) => {
+const SalesByYear = ({ data, loading }) => {
   const raw = data?.salesByBrandYear ?? [];
   const [hoveredKey, setHoveredKey] = useState(null);
 
@@ -112,24 +113,32 @@ const SalesByYear = ({ data }) => {
   // Legend items
   const legendItems = useMemo(() => brands.map((b) => ({ label: b, color: brandColor(b) })), [brands]);
 
-  if (rows.length === 0) {
-    return <div className="chart-placeholder">No data available</div>;
+  // Animation key that changes when data snapshot changes
+  const animId = useMemo(() => {
+    const totals = rows.map(r => brands.reduce((s, k) => s + (Number(r[k]) || 0), 0)).join('-');
+    return `${brands.join('|')}::${years.join('|')}::${domainMax}::${totals}`;
+  }, [brands, years, domainMax, rows]);
+
+  if (loading || (!data && rows.length === 0)) {
+    return <ChartSkeleton variant="bars-h" height={300} />;
   }
+  if (rows.length === 0) return <div className="chart-placeholder">No data available</div>;
 
   return (
     <div className="chart-wrapper">
       <div style={{ fontSize: 18, fontWeight: 600, color: '#333', marginBottom: 16 }}>Sales Value (EURO)</div>
       <div style={{ width: '100%', height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 60 }} barCategoryGap={18}>
+          <BarChart data={rows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
             <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
             <XAxis type="number" tickFormatter={xFormat} domain={[0, domainMax]} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} width={50} />
+            <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} tickMargin={2} />
             <Tooltip
               content={(props) => (
                 <CustomTooltip {...props} order={brands} hoveredKey={hoveredKey} />
               )}
               cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+              isAnimationActive={false}
             />
 
             {brands.map((b, i) => (
@@ -140,6 +149,10 @@ const SalesByYear = ({ data }) => {
                 stackId="a"
                 fill={brandColor(b)}
                 barSize={26}
+                isAnimationActive
+                animationId={animId}
+                animationDuration={500}
+                animationEasing="ease-in-out"
                 radius={
                   i === 0 ? [8, 0, 0, 8] : i === brands.length - 1 ? [0, 8, 8, 0] : 0
                 }

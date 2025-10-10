@@ -9,6 +9,7 @@ import {
   Tooltip
 } from 'recharts';
 import './ChartStyles.css';
+import ChartSkeleton from './ChartSkeleton';
 
 function formatMillions(value) {
   if (value == null || isNaN(value)) return '';
@@ -31,7 +32,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const MonthlyTrend = ({ data }) => {
+const MonthlyTrend = ({ data, loading }) => {
   const [selectedMetric, setSelectedMetric] = useState('value');
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -111,6 +112,11 @@ const MonthlyTrend = ({ data }) => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [dropdownOpen]);
+
+  // Show skeleton while loading or when data is pending (after hooks)
+  if (loading || (!data && processedData.length === 0)) {
+    return <ChartSkeleton variant="line" height={320} />;
+  }
 
   // Define a width that creates room to scroll if many months
   const pointWidthPx = 80; // width per month label
@@ -195,7 +201,7 @@ const MonthlyTrend = ({ data }) => {
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#94e2b3', strokeWidth: 1, opacity: 0.4 }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#94e2b3', strokeWidth: 1, opacity: 0.4 }} isAnimationActive={false}/>
                   <Line
                     type="monotone"
                     dataKey={selectedMetric}

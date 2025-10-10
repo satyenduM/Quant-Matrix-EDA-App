@@ -123,11 +123,7 @@ function App() {
           onReset={handleReset}
         />
         
-        {loading ? (
-          <div className="loading">Loading data...</div>
-        ) : (
-          <Dashboard data={chartData} />
-        )}
+        <Dashboard data={chartData} loading={loading} />
       </div>
     </div>
   );
