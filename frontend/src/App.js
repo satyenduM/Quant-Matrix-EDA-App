@@ -57,7 +57,12 @@ function App() {
       const response = await axios.get('http://localhost:8000/api/filters/');
       setFilterOptions(response.data);
     } catch (error) {
-      console.error('Error fetching filter options:', error);
+      try {
+        const response = await axios.get('https://quant-matrix-eda-app-production.up.railway.app/api/filters/');
+        setFilterOptions(response.data);
+      } catch (railwayError) {
+        console.error('Error fetching filter options from both localhost and Railway:', railwayError);
+      }
     }
   };
 
@@ -69,7 +74,14 @@ function App() {
       });
       setChartData(response.data);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      try {
+        const response = await axios.post('https://quant-matrix-eda-app-production.up.railway.app/api/data/', {
+          filters: selectedFilters
+        });
+        setChartData(response.data);
+      } catch (railwayError) {
+        console.error('Error fetching data from both localhost and Railway:', railwayError);
+      }
     } finally {
       setLoading(false);
     }
