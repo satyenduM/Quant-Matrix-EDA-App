@@ -26,14 +26,6 @@ An Exploratory Data Analysis (EDA) dashboard built with React (frontend) and Dja
 
 ## 🧠 Thought Process & Architecture
 
-### Design Philosophy
-- **Separation of Concerns**: Clear separation between frontend visualization and backend data processing
-- **Performance First**: In-memory caching with singleton pattern for data loading
-- **User Experience**: Real-time filter updates with loading states and smooth animations
-- **Scalability**: Modular component architecture for easy feature additions
-
-### Key Architectural Decisions
-
 1. **Data Caching Strategy**
    - CSV loaded once into memory using singleton pattern
    - Pandas DataFrame operations for efficient filtering and aggregation
