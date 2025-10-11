@@ -44,8 +44,8 @@ const brandColor = (brand) => {
   return fallbackPalette[h % fallbackPalette.length];
 };
 
-// Animation constants for smooth, very short, meaningful motion
-const ANIM = { duration: 100, easing: 'ease-out' };
+// Animation constants for smooth, short, meaningful motion
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 
 const CustomTooltip = ({ active, payload, hoveredKey }) => {
@@ -70,8 +70,20 @@ const CustomLegend = ({ items }) => (
   </div>
 );
 
-const VolumeByYear = ({ data, loading }) => {
-  const raw = useMemo(() => data?.volumeByBrandYear ?? [], [data?.volumeByBrandYear]);
+const VolumeByYear = ({ data, loading, viewMode }) => {
+  const view = viewMode || 'brand';
+  const raw = useMemo(() => {
+    switch (view) {
+      case 'packType':
+        return data?.volumeByPackTypeYear ?? [];
+      case 'ppg':
+        return data?.volumeByPPGYear ?? [];
+      case 'brand-x-pack':
+        return data?.volumeByComboYear ?? [];
+      default:
+        return data?.volumeByBrandYear ?? [];
+    }
+  }, [view, data?.volumeByBrandYear, data?.volumeByPackTypeYear, data?.volumeByPPGYear, data?.volumeByComboYear]);
   const [hoveredKey, setHoveredKey] = useState(null);
   const [hoveredBrand, setHoveredBrand] = useState(null);
 
@@ -80,7 +92,11 @@ const VolumeByYear = ({ data, loading }) => {
   const [lastYears, setLastYears] = useState([]);
   const [lastRows, setLastRows] = useState([]);
 
-  const brands = useMemo(() => sortBrands([...new Set(raw.map(d => d.Brand))]), [raw]);
+  const dimKey = view === 'brand' ? 'Brand' : view === 'packType' ? 'PackType' : view === 'ppg' ? 'PPG' : 'Combo';
+  const brands = useMemo(() => {
+    const labels = [...new Set(raw.map(d => (d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · '))))];
+    return view === 'brand' ? sortBrands(labels) : labels.sort();
+  }, [raw, view, dimKey]);
   const years = useMemo(() => [...new Set(raw.map(d => d.Year))].sort(), [raw]);
 
   useEffect(() => {
@@ -94,13 +110,13 @@ const VolumeByYear = ({ data, loading }) => {
     if (years.length === 0 || brands.length === 0) return [];
     return years.map((year) => {
       const row = { year: String(year) };
-      brands.forEach((brand) => {
-        const rec = raw.find((d) => d.Brand === brand && d.Year === year);
-        row[brand] = rec ? Number(rec.Volume) : 0;
+      brands.forEach((label) => {
+        const rec = raw.find((d) => String(d.Year) === String(year) && ((d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · ')) === label));
+        row[label] = rec ? Number(rec.Volume) : 0;
       });
       return row;
     });
-  }, [raw, years, brands]);
+  }, [raw, years, brands, dimKey]);
 
   useEffect(() => {
     if (!loading && rows.length > 0) setLastRows(rows);
@@ -120,7 +136,7 @@ const VolumeByYear = ({ data, loading }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
 
   // Animation key tied to data snapshot

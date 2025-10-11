@@ -92,6 +92,26 @@ def get_filtered_data(request):
             'date': 'first'
         }).reset_index()
         monthly_trend = monthly_trend.sort_values(['Year', 'Month'])
+
+        # 5b. KPI correlation matrix across monthly KPIs (SalesValue, Volume, ASP)
+        kpi_correlation = []
+        try:
+            mt = monthly_trend.copy()
+            mt['ASP'] = mt.apply(lambda r: (r['SalesValue'] / r['Volume']) if (pd.notna(r['SalesValue']) and pd.notna(r['Volume']) and r['Volume'] not in [0, None]) else np.nan, axis=1)
+            corr = mt[['SalesValue', 'Volume', 'ASP']].corr()
+            kpi_order = ['SalesValue', 'Volume', 'ASP']
+            for r in kpi_order:
+                for c in kpi_order:
+                    val = corr.loc[r, c] if (r in corr.index and c in corr.columns) else np.nan
+                    if pd.notna(val):
+                        kpi_correlation.append({'row': r, 'col': c, 'value': float(val)})
+        except Exception as _:
+            kpi_correlation = []
+
+        # 5c. Monthly brand sales (for potential market share trends)
+        monthly_brand_sales = df.groupby(['Year', 'Month', 'YearMonth', 'Brand']).agg({
+            'SalesValue': 'sum'
+        }).reset_index().sort_values(['Year', 'Month', 'Brand'])
         
         # 6. Market Share by Brand (Pie/Donut Chart)
         market_share_sales = df.groupby('Brand').agg({
@@ -104,6 +124,92 @@ def get_filtered_data(request):
         year_brand_sales = df.groupby(['Brand', 'Year']).agg({
             'SalesValue': 'sum'
         }).reset_index()
+
+        # Additional datasets for view modes
+        # Sales by PackType and Year
+        sales_by_packtype_year = df.groupby(['Year', 'PackType']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        # Sales by PPG and Year
+        sales_by_ppg_year = df.groupby(['Year', 'PPG']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        # Add Combo label for combinations
+        df['Combo'] = (df['Brand'].astype(str).fillna('') + ' · ' +
+                       df['PackType'].astype(str).fillna('') + ' · ' +
+                       df['PPG'].astype(str).fillna(''))
+
+        # Sales by Combo and Year
+        sales_by_combo_year = df.groupby(['Year', 'Brand', 'PackType', 'PPG', 'Combo']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        # Volume variants
+        volume_by_packtype_year = df.groupby(['Year', 'PackType']).agg({
+            'Volume': 'sum'
+        }).reset_index()
+
+        volume_by_ppg_year = df.groupby(['Year', 'PPG']).agg({
+            'Volume': 'sum'
+        }).reset_index()
+
+        volume_by_combo_year = df.groupby(['Year', 'Brand', 'PackType', 'PPG', 'Combo']).agg({
+            'Volume': 'sum'
+        }).reset_index()
+
+        # Year-wise sales by other dimensions (for vertical grouped bars)
+        year_packtype_sales = df.groupby(['PackType', 'Year']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        year_ppg_sales = df.groupby(['PPG', 'Year']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        year_combo_sales = df.groupby(['Brand', 'PackType', 'PPG', 'Combo', 'Year']).agg({
+            'SalesValue': 'sum'
+        }).reset_index()
+
+        # Market share variants
+        market_share_packtype = df.groupby('PackType').agg({
+            'SalesValue': 'sum',
+            'Volume': 'sum'
+        }).reset_index()
+
+        market_share_ppg = df.groupby('PPG').agg({
+            'SalesValue': 'sum',
+            'Volume': 'sum'
+        }).reset_index()
+
+        market_share_combo = df.groupby(['Brand', 'PackType', 'PPG', 'Combo']).agg({
+            'SalesValue': 'sum',
+            'Volume': 'sum'
+        }).reset_index()
+
+        # Basic correlation matrix between available numeric fields
+        corr_columns = []
+        for col in ['SalesValue', 'Volume', 'VolumeUnits']:
+            if col in df.columns:
+                corr_columns.append(col)
+        for col in df.columns:
+            if any(col.startswith(prefix) for prefix in ['D', 'AV', 'EV']):
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    corr_columns.append(col)
+        corr_columns = list(dict.fromkeys(corr_columns))  # dedupe while preserving order
+        correlation_pairs = []
+        if len(corr_columns) >= 2:
+            corr_df = df[corr_columns].corr()
+            cols = list(corr_df.columns)
+            for i in range(len(cols)):
+                for j in range(i + 1, len(cols)):
+                    val = corr_df.iloc[i, j]
+                    if pd.notna(val):
+                        try:
+                            correlation_pairs.append({'var1': cols[i], 'var2': cols[j], 'corr': float(val)})
+                        except Exception:
+                            pass
         
         # Convert to JSON-serializable format
         def clean_data(data):
@@ -113,11 +219,33 @@ def get_filtered_data(request):
         return Response({
             'salesByYear': clean_data(sales_by_year).to_dict('records'),
             'volumeByYear': clean_data(volume_by_year).to_dict('records'),
+
             'salesByBrandYear': clean_data(sales_by_brand_year).to_dict('records'),
             'volumeByBrandYear': clean_data(volume_by_brand_year).to_dict('records'),
+
+            'salesByPackTypeYear': clean_data(sales_by_packtype_year).to_dict('records'),
+            'salesByPPGYear': clean_data(sales_by_ppg_year).to_dict('records'),
+            'salesByComboYear': clean_data(sales_by_combo_year).to_dict('records'),
+
+            'volumeByPackTypeYear': clean_data(volume_by_packtype_year).to_dict('records'),
+            'volumeByPPGYear': clean_data(volume_by_ppg_year).to_dict('records'),
+            'volumeByComboYear': clean_data(volume_by_combo_year).to_dict('records'),
+
             'monthlyTrend': clean_data(monthly_trend).to_dict('records'),
+            'kpiCorrelation': kpi_correlation,
+            'monthlyBrandSales': clean_data(monthly_brand_sales).to_dict('records'),
+
             'marketShareSales': clean_data(market_share_sales).to_dict('records'),
-            'yearBrandSales': clean_data(year_brand_sales).to_dict('records')
+            'marketSharePackType': clean_data(market_share_packtype).to_dict('records'),
+            'marketSharePPG': clean_data(market_share_ppg).to_dict('records'),
+            'marketShareCombo': clean_data(market_share_combo).to_dict('records'),
+
+            'yearBrandSales': clean_data(year_brand_sales).to_dict('records'),
+            'yearPackTypeSales': clean_data(year_packtype_sales).to_dict('records'),
+            'yearPPGSales': clean_data(year_ppg_sales).to_dict('records'),
+            'yearComboSales': clean_data(year_combo_sales).to_dict('records'),
+
+            'correlationMatrix': correlation_pairs
         })
     except Exception as e:
         print(f"Error in get_filtered_data: {e}")

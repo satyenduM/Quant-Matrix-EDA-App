@@ -29,8 +29,8 @@ const brandColor = (brand) => {
   return fallback[h % fallback.length];
 };
 
-// Animation constants (very short, meaningful, ease-out)
-const ANIM = { duration: 100, easing: 'ease-out' };
+// Animation constants (short, meaningful, ease-out)
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   if (!active || !payload || !payload.length) return null;
@@ -58,7 +58,7 @@ const CustomLegend = ({ items }) => (
   </div>
 );
 
-const MarketShare = ({ data, loading }) => {
+const MarketShare = ({ data, loading, viewMode }) => {
   const [viewType, setViewType] = useState('sales'); // 'sales' or 'volume'
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(null);
@@ -70,17 +70,42 @@ const MarketShare = ({ data, loading }) => {
     return () => document.removeEventListener('click', handler);
   }, [dropdownOpen]);
 
-  const source = useMemo(() => data?.marketShareSales ?? [], [data?.marketShareSales]);
+  const view = viewMode || 'brand';
+  const source = useMemo(() => {
+    switch (view) {
+      case 'packType':
+        return data?.marketSharePackType ?? [];
+      case 'ppg':
+        return data?.marketSharePPG ?? [];
+      case 'brand-x-pack':
+        return data?.marketShareCombo ?? [];
+      default:
+        return data?.marketShareSales ?? [];
+    }
+  }, [view, data?.marketShareSales, data?.marketSharePackType, data?.marketSharePPG, data?.marketShareCombo]);
   const rows = useMemo(() => {
-    const items = source.map(d => ({ label: d.Brand, value: viewType === 'sales' ? Number(d.SalesValue) : Number(d.Volume) }));
-    // Numeric brand order: Brand 1, Brand 2, ...; fallback alphabetical
+    const labelKey = view === 'brand' ? 'Brand' : view === 'packType' ? 'PackType' : view === 'ppg' ? 'PPG' : 'Combo';
+    const items = source.map(d => ({ label: d[labelKey] ?? d.Combo ?? d.Brand ?? 'N/A', value: viewType === 'sales' ? Number(d.SalesValue) : Number(d.Volume) }));
+
+    // For combo, limit to top N and group rest as 'Others' to avoid clutter
+    if (view === 'brand-x-pack') {
+      const sorted = [...items].sort((a, b) => b.value - a.value);
+      const TOP_N = 12;
+      const top = sorted.slice(0, TOP_N);
+      const othersSum = sorted.slice(TOP_N).reduce((s, r) => s + (r.value || 0), 0);
+      return othersSum > 0 ? [...top, { label: 'Others', value: othersSum }] : top;
+    }
+
+    // Otherwise, sort nicely: numeric brand order else alpha
     return items.sort((a, b) => {
-      const na = /brand\s*(\d+)/i.exec(a.label);
-      const nb = /brand\s*(\d+)/i.exec(b.label);
-      if (na && nb) return parseInt(na[1], 10) - parseInt(nb[1], 10);
+      if (view === 'brand') {
+        const na = /brand\s*(\d+)/i.exec(a.label);
+        const nb = /brand\s*(\d+)/i.exec(b.label);
+        if (na && nb) return parseInt(na[1], 10) - parseInt(nb[1], 10);
+      }
       return a.label.localeCompare(b.label);
     });
-  }, [source, viewType]);
+  }, [source, view, viewType]);
 
   // Preserve last non-empty rows to avoid unmounting on loading
   const [lastRows, setLastRows] = useState([]);
@@ -186,7 +211,7 @@ const MarketShare = ({ data, loading }) => {
                   <Cell
                     key={`slice-${entry.label}`}
                     fill={brandColor(entry.label)}
-                    stroke="#fff"
+                    stroke={activeIndex === index ? '#000' : '#fff'}
                     strokeWidth={activeIndex === index ? 3 : 2}
                   />
                 ))}

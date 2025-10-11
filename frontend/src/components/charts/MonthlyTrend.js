@@ -21,15 +21,16 @@ function formatMillions(value) {
 }
 
 // Animation constants for smooth transitions
-const ANIM = { duration: 100, easing: 'ease-out' };
+const ANIM = { duration: 200, easing: 'ease-out' };
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, selectedMetric }) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
+    const text = selectedMetric === 'asp' ? `€${(value ?? 0).toFixed(2)}` : formatMillions(value);
     return (
       <div className="chart-tooltip">
         <div className="chart-tooltip-date">{label}</div>
-        <div className="chart-tooltip-value">{formatMillions(value)}</div>
+        <div className="chart-tooltip-value">{text}</div>
       </div>
     );
   }
@@ -46,10 +47,14 @@ const MonthlyTrend = ({ data, loading }) => {
       const date = new Date(item.date);
       const month = date.toLocaleString('en-US', { month: 'short' });
       const year = date.getFullYear();
+      const sales = Number(item.SalesValue) || 0;
+      const vol = Number(item.Volume) || 0;
+      const asp = vol > 0 ? sales / vol : 0;
       return {
         label: `${month} ${year}`,
-        value: item.SalesValue || 0,
-        volume: item.Volume || 0
+        value: sales,
+        volume: vol,
+        asp: asp
       };
     });
   }, [data]);
@@ -69,19 +74,17 @@ const MonthlyTrend = ({ data, loading }) => {
   }, [displayData, selectedMetric]);
 
   // Dynamic Y-axis scaling based on current filtered data
-  const currentValues = (displayData || []).map(d => selectedMetric === 'value' ? d.value : d.volume);
+  const currentValues = (displayData || []).map(d => selectedMetric === 'value' ? d.value : selectedMetric === 'volume' ? d.volume : d.asp);
   const computedMax = useMemo(() => {
     const maxValue = Math.max(0, ...currentValues);
-    
-    // Add 10% padding above the maximum value for better visualization
     const paddedMax = maxValue * 1.1;
-    
-    // Round to nearest 1M for clean tick marks
-    const step = 1_000_000;
-    return Math.ceil(paddedMax / step) * step || step;
-  }, [currentValues]);
+    const step = selectedMetric === 'asp'
+      ? (paddedMax <= 10 ? 1 : paddedMax <= 50 ? 5 : paddedMax <= 100 ? 10 : 50)
+      : 1_000_000;
+    return Math.ceil((paddedMax || step) / step) * step;
+  }, [currentValues, selectedMetric]);
 
-  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 400, 'easeOutCubic');
   const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Horizontal scroll handling + indicator
@@ -153,7 +156,8 @@ const MonthlyTrend = ({ data, loading }) => {
 
   const metricOptions = [
     { value: 'value', label: 'Value' },
-    { value: 'volume', label: 'Volume' }
+    { value: 'volume', label: 'Volume' },
+    { value: 'asp', label: 'ASP' }
   ];
 
   const handleMetricChange = (metric) => {
@@ -225,12 +229,12 @@ const MonthlyTrend = ({ data, loading }) => {
                   />
                   <YAxis
                     domain={yDomain}
-                    tickFormatter={formatMillions}
+                    tickFormatter={selectedMetric === 'asp' ? (v) => `€${Number(v || 0).toFixed(0)}` : formatMillions}
                     tick={{ fontSize: 12, fill: '#666' }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#94e2b3', strokeWidth: 1, opacity: 0.4 }} isAnimationActive={false}/>
+                  <Tooltip content={(props) => <CustomTooltip {...props} selectedMetric={selectedMetric} />} cursor={{ stroke: '#94e2b3', strokeWidth: 1, opacity: 0.4 }} isAnimationActive={false}/>
                   <Line
                     type="monotone"
                     dataKey={selectedMetric}

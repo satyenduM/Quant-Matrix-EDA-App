@@ -42,8 +42,8 @@ const yearColor = (year, index) => {
   return palette[index % palette.length];
 };
 
-// Animation constants (very short, ease-out)
-const ANIM = { duration: 100, easing: 'ease-out' };
+// Animation constants (short, ease-out)
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, hoveredKey }) => {
   if (!active || !payload || !payload.length) return null;
@@ -67,7 +67,7 @@ const CustomLegend = ({ years }) => (
   </div>
 );
 
-const YearBrandSales = ({ data, loading }) => {
+const YearBrandSales = ({ data, loading, viewMode }) => {
   // Dropdown state (Value/Volume)
   const [selectedMetric, setSelectedMetric] = useState('value');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -88,13 +88,39 @@ const YearBrandSales = ({ data, loading }) => {
     return () => document.removeEventListener('click', onDocClick);
   }, [dropdownOpen]);
 
-  const source = useMemo(() => 
-    selectedMetric === 'value' ? (data?.yearBrandSales ?? []) : (data?.volumeByBrandYear ?? []),
-    [selectedMetric, data?.yearBrandSales, data?.volumeByBrandYear]
-  );
+  const view = viewMode || 'brand';
+  const source = useMemo(() => {
+    if (selectedMetric === 'value') {
+      switch (view) {
+        case 'packType':
+          return data?.yearPackTypeSales ?? [];
+        case 'ppg':
+          return data?.yearPPGSales ?? [];
+        case 'brand-x-pack':
+          return data?.yearComboSales ?? [];
+        default:
+          return data?.yearBrandSales ?? [];
+      }
+    } else {
+      switch (view) {
+        case 'packType':
+          return data?.volumeByPackTypeYear ?? [];
+        case 'ppg':
+          return data?.volumeByPPGYear ?? [];
+        case 'brand-x-pack':
+          return data?.volumeByComboYear ?? [];
+        default:
+          return data?.volumeByBrandYear ?? [];
+      }
+    }
+  }, [selectedMetric, view, data?.yearBrandSales, data?.yearPackTypeSales, data?.yearPPGSales, data?.yearComboSales, data?.volumeByBrandYear, data?.volumeByPackTypeYear, data?.volumeByPPGYear, data?.volumeByComboYear]);
 
   // Brands and years (unconditional hooks)
-  const brands = useMemo(() => sortBrands([...new Set(source.map(d => d.Brand))]), [source]);
+  const dimKey = view === 'brand' ? 'Brand' : view === 'packType' ? 'PackType' : view === 'ppg' ? 'PPG' : 'Combo';
+  const brands = useMemo(() => {
+    const labels = [...new Set(source.map(d => (d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · '))))];
+    return view === 'brand' ? sortBrands(labels) : labels.sort();
+  }, [source, view, dimKey]);
   const years = useMemo(() => [...new Set(source.map(d => d.Year))].sort(), [source]);
 
   useEffect(() => {
@@ -104,10 +130,10 @@ const YearBrandSales = ({ data, loading }) => {
   // Rows for recharts
   const rows = useMemo(() => {
     if (brands.length === 0 || years.length === 0) return [];
-    return brands.map((brand) => {
-      const row = { brand };
+    return brands.map((label) => {
+      const row = { label };
       years.forEach((y) => {
-        const rec = source.find(r => r.Brand === brand && r.Year === y);
+        const rec = source.find(r => (r[dimKey] ?? [r.Brand, r.PackType, r.PPG].filter(Boolean).join(' · ')) === label && r.Year === y);
         row[y] = rec ? Number(selectedMetric === 'value' ? rec.SalesValue : rec.Volume) : 0;
       });
       return row;
@@ -134,7 +160,7 @@ const YearBrandSales = ({ data, loading }) => {
     return Math.ceil(paddedMax / step) * step || step;
   }, [displayRows, displayYears]);
 
-  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
   const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Stable animation id to smoothly transition between metrics and data changes
@@ -202,7 +228,7 @@ const YearBrandSales = ({ data, loading }) => {
         <ResponsiveContainer>
           <BarChart data={displayRows} margin={{ top: 10, right: 10, bottom: 20, left: 0 }}>
             <CartesianGrid stroke="#eaeaea" vertical horizontal={true} />
-            <XAxis dataKey="brand" tick={{ fontSize: 12, fill: '#666' }} tickLine={false} axisLine={{ stroke: '#eee' }} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#666' }} tickLine={false} axisLine={{ stroke: '#eee' }} />
             <YAxis tickFormatter={formatMillions} tick={{ fontSize: 12, fill: '#666' }} axisLine={false} tickLine={false} domain={yDomain} />
             <Tooltip content={(props) => <CustomTooltip {...props} hoveredKey={hoveredKey} />} cursor={false} isAnimationActive={false}/>
 
@@ -220,7 +246,7 @@ const YearBrandSales = ({ data, loading }) => {
                 animationDuration={ANIM.duration}
                 animationEasing={ANIM.easing}
                 shape={(props) => {
-                  const isActive = hoveredKey === String(y) && hoveredBrand === props?.payload?.brand;
+                  const isActive = hoveredKey === String(y) && hoveredBrand === props?.payload?.label;
                   return (
                     <Rectangle
                       {...props}
@@ -229,8 +255,8 @@ const YearBrandSales = ({ data, loading }) => {
                     />
                   );
                 }}
-                onMouseEnter={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.brand ?? null); }}
-                onMouseMove={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.brand ?? null); }}
+                onMouseEnter={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.label ?? null); }}
+                onMouseMove={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.label ?? null); }}
                 onMouseLeave={() => { setHoveredKey(null); setHoveredBrand(null); }}
               />
             ))}

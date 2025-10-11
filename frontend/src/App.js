@@ -24,7 +24,7 @@ function App() {
 
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('trends');
+  const [activeTab, setActiveTab] = useState('brand');
   const debounceTimeoutRef = useRef(null);
 
   // Fetch filter options on mount
@@ -151,7 +151,7 @@ function App() {
           onReset={handleReset}
         />
         
-        <Dashboard data={chartData} loading={loading} />
+        <Dashboard data={chartData} loading={loading} viewMode={activeTab} />
       </div>
     </div>
   );

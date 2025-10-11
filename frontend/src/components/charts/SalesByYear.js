@@ -46,8 +46,8 @@ const brandColor = (brand) => {
   return fallbackPalette[h % fallbackPalette.length];
 };
 
-// Animation constants for smooth, very short, meaningful motion
-const ANIM = { duration: 100, easing: 'ease-out' };
+// Animation constants for smooth, short, meaningful motion
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 
 const CustomTooltip = ({ active, payload, label, order, hoveredKey }) => {
@@ -73,8 +73,20 @@ const CustomLegend = ({ items }) => (
   </div>
 );
 
-const SalesByYear = ({ data, loading }) => {
-  const raw = useMemo(() => data?.salesByBrandYear ?? [], [data?.salesByBrandYear]);
+const SalesByYear = ({ data, loading, viewMode }) => {
+  const view = viewMode || 'brand';
+  const raw = useMemo(() => {
+    switch (view) {
+      case 'packType':
+        return data?.salesByPackTypeYear ?? [];
+      case 'ppg':
+        return data?.salesByPPGYear ?? [];
+      case 'brand-x-pack':
+        return data?.salesByComboYear ?? [];
+      default:
+        return data?.salesByBrandYear ?? [];
+    }
+  }, [view, data?.salesByBrandYear, data?.salesByPackTypeYear, data?.salesByPPGYear, data?.salesByComboYear]);
   const [hoveredKey, setHoveredKey] = useState(null);
   const [hoveredBrand, setHoveredBrand] = useState(null);
 
@@ -84,7 +96,11 @@ const SalesByYear = ({ data, loading }) => {
   const [lastRows, setLastRows] = useState([]);
 
   // Prepare brand and year lists (hooks must be unconditional)
-  const brands = useMemo(() => sortBrands([...new Set(raw.map(d => d.Brand))]), [raw]);
+  const dimKey = view === 'brand' ? 'Brand' : view === 'packType' ? 'PackType' : view === 'ppg' ? 'PPG' : 'Combo';
+  const brands = useMemo(() => {
+    const labels = [...new Set(raw.map(d => (d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · '))))];
+    return view === 'brand' ? sortBrands(labels) : labels.sort();
+  }, [raw, view, dimKey]);
   const years = useMemo(() => [...new Set(raw.map(d => d.Year))].sort(), [raw]);
 
   // Update last known brands/years when valid and not loading
@@ -100,13 +116,13 @@ const SalesByYear = ({ data, loading }) => {
     if (years.length === 0 || brands.length === 0) return [];
     return years.map((year) => {
       const row = { year: String(year) };
-      brands.forEach((brand) => {
-        const rec = raw.find((d) => d.Brand === brand && d.Year === year);
-        row[brand] = rec ? Number(rec.SalesValue) : 0;
+      brands.forEach((label) => {
+        const rec = raw.find((d) => String(d.Year) === String(year) && ((d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · ')) === label));
+        row[label] = rec ? Number(rec.SalesValue) : 0;
       });
       return row;
     });
-  }, [raw, years, brands]);
+  }, [raw, years, brands, dimKey]);
 
   useEffect(() => {
     if (!loading && rows.length > 0) setLastRows(rows);
@@ -130,7 +146,7 @@ const SalesByYear = ({ data, loading }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
 
   // Legend items
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
