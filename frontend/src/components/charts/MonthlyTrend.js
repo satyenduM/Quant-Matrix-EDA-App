@@ -21,7 +21,7 @@ function formatMillions(value) {
 }
 
 // Animation constants for smooth transitions
-const ANIM = { duration: 400, easing: 'ease-out' };
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {

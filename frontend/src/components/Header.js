@@ -11,23 +11,18 @@ const Header = ({ activeTab, setActiveTab }) => {
           <span></span>
         </button>
         <div className="logo">
-          <div className="logo-brackets">[ ]</div>
           <div className="logo-text">
-            <div className="logo-quant">QUANT</div>
-            <div className="logo-matrix">MATRIX AI</div>
+            <img src="https://quantmatrix.ai/assets/logo-BlQOt2VI.svg" alt="Logo"/>
           </div>
         </div>
       </div>
       <div className="header-right">
         <div className="project-name">
           <span className="globe-icon">🌐</span>
-          <span>Project Name</span>
+          <span>Satyendu Mohapatra</span>
         </div>
-        <button className="icon-button">✉️</button>
-        <button className="icon-button">🔔</button>
         <div className="user-avatar">
-          <div className="avatar-circle">U</div>
-          <div className="status-dot"></div>
+          <div className="avatar-circle">S</div>
         </div>
       </div>
     </header>

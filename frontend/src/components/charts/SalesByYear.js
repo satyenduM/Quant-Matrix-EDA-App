@@ -33,9 +33,9 @@ const brandColor = (brand) => {
     'Brand 1': '#fbbf24', // amber
     'Brand 2': '#3b82f6', // blue
     'Brand 3': '#22c55e', // green 500
-    'Brand 4': '#c6f6d5', // green 200
-    'Brand 5': '#16a34a', // green 600
-    'Brand 6': '#86efac', // green 300
+    'Brand 4': '#FFA500', // orange
+    'Brand 5': '#1ABC9C', // teal
+    'Brand 6': '#9B59B6', // purple
   };
   if (map[brand]) return map[brand];
   // Hash-based fallback to keep colors stable for unknown brands
@@ -46,30 +46,17 @@ const brandColor = (brand) => {
 };
 
 // Animation constants for smooth, short, meaningful motion
-const ANIM = { duration: 400, easing: 'ease-out' };
+const ANIM = { duration: 200, easing: 'ease-out' };
 
-const makeRange = (row, dataKey, order) => {
-  const idx = order.indexOf(dataKey);
-  if (idx < 0) return null;
-  const start = order.slice(0, idx).reduce((s, k) => s + (Number(row[k]) || 0), 0);
-  const end = start + (Number(row[dataKey]) || 0);
-  return { start, end };
-};
 
 const CustomTooltip = ({ active, payload, label, order, hoveredKey }) => {
   if (!active || !payload || !payload.length) return null;
   // Prefer the truly hovered key tracked from Bar events
   const target = (hoveredKey && payload.find(p => p.dataKey === hoveredKey)) || payload[payload.length - 1];
-  const stackOrder = (payload || []).map(p => p.dataKey);
-  const range = makeRange(target.payload, target.dataKey, stackOrder.length ? stackOrder : (order || []));
   return (
     <div className="chart-tooltip" style={{ background: '#111827', color: '#fff', padding: 8, borderRadius: 8 }}>
       <div style={{ fontSize: 12, opacity: 0.8 }}>{target.name || target.dataKey}</div>
-      {range ? (
-        <div style={{ fontSize: 16, fontWeight: 600 }}>{`${xFormatCompact(range.start)} - ${xFormatCompact(range.end)}`}</div>
-      ) : (
-        <div style={{ fontSize: 16, fontWeight: 600 }}>{xFormatCompact(target.value)}</div>
-      )}
+      <div style={{ fontSize: 16, fontWeight: 600 }}>{xFormatCompact(target.value)}</div>
     </div>
   );
 };
@@ -141,7 +128,7 @@ const SalesByYear = ({ data, loading }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 200, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
 
   // Legend items
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
@@ -173,9 +160,25 @@ const SalesByYear = ({ data, loading }) => {
       <div style={{ width: '100%', height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={brandOrderKey} data={displayRows} layout="vertical" margin={{ top: 10, right: 24, bottom: 10, left: 6 }} barCategoryGap={18}>
-            <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={xFormat} domain={[0, Math.max(0, Math.round(animatedMax))]} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="year" tickLine={false} axisLine={false} tickMargin={2} />
+            {/* dotted grid inside chart */}
+            <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" horizontal vertical />
+
+            {/* Solid light grey axes */}
+            <XAxis
+              type="number"
+              tickFormatter={xFormat}
+              domain={[0, Math.max(0, Math.round(animatedMax))]}
+              tickLine={false}
+              axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
+            />
+            <YAxis
+              type="category"
+              dataKey="year"
+              tickLine={false}
+              axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
+              tickMargin={2}
+            />
+
             <Tooltip
               content={(props) => (
                 <CustomTooltip {...props} order={displayBrands} hoveredKey={hoveredKey} />
@@ -219,4 +222,3 @@ const SalesByYear = ({ data, loading }) => {
 };
 
 export default SalesByYear;
-

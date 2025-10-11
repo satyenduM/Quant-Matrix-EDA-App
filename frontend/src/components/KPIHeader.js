@@ -1,5 +1,6 @@
 import React from 'react';
 import './KPIHeader.css';
+import useTweenedNumber from './charts/animations/useTweenedNumber';
 
 const KPIHeader = ({ data, loading }) => {
   // Calculate KPIs from the data
@@ -79,6 +80,12 @@ const KPIHeader = ({ data, loading }) => {
   };
 
   const kpis = calculateKPIs();
+  
+  // Animate KPI values
+  const animatedSalesValue = useTweenedNumber(kpis.totalSalesValue, 300, 'easeOutCubic');
+  const animatedVolume = useTweenedNumber(kpis.totalVolume, 300, 'easeOutCubic');
+  const animatedASP = useTweenedNumber(kpis.asp, 300, 'easeOutCubic');
+  const animatedYoY = useTweenedNumber(kpis.yoyGrowth, 300, 'easeOutCubic');
 
   if (loading && !data) {
     return (
@@ -102,23 +109,23 @@ const KPIHeader = ({ data, loading }) => {
       <div className="kpi-container">
         <div className="kpi-card">
           <div className="kpi-title">Total Sales Value</div>
-          <div className="kpi-value">{formatCurrency(kpis.totalSalesValue)}</div>
+          <div className="kpi-value">{formatCurrency(animatedSalesValue)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">Total Volume</div>
-          <div className="kpi-value">{formatVolume(kpis.totalVolume)}</div>
+          <div className="kpi-value">{formatVolume(animatedVolume)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">ASP</div>
-          <div className="kpi-value">€{kpis.asp.toFixed(2)}</div>
+          <div className="kpi-value">€{animatedASP.toFixed(2)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">YoY Growth</div>
           <div className={`kpi-value ${kpis.yoyGrowth >= 0 ? 'positive' : 'negative'}`}>
-            {formatPercentage(kpis.yoyGrowth)}
+            {formatPercentage(animatedYoY)}
           </div>
         </div>
       </div>

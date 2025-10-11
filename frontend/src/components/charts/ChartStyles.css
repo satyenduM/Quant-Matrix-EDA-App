@@ -122,8 +122,8 @@
 }
 
 .chart-dropdown-item.active {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #fef7e0;
+  color: #333;
   font-weight: 600;
 }
 
@@ -179,7 +179,7 @@
 
 .chart-controls button.active {
   color: white;
-  border-color: #4a90e2;
+  border-color: #F5C06A;
 }
 
 /* Ensure charts are responsive */

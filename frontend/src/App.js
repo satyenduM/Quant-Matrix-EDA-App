@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import Header from './components/Header';
 import Filters from './components/Filters';
@@ -25,15 +25,31 @@ function App() {
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('trends');
+  const debounceTimeoutRef = useRef(null);
 
   // Fetch filter options on mount
   useEffect(() => {
     fetchFilterOptions();
   }, []);
 
-  // Fetch data when filters change
+  // Debounced fetch data when filters change
   useEffect(() => {
-    fetchData();
+    // Clear existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounced fetch
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetchData();
+    }, 150); // 150ms debounce
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, [selectedFilters]);
 
   const fetchFilterOptions = async () => {
@@ -45,7 +61,7 @@ function App() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.post('http://localhost:8000/api/data/', {
@@ -57,7 +73,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFilters]);
 
   const handleFilterChange = (filterType, values) => {
     setSelectedFilters(prev => ({

@@ -19,9 +19,9 @@ const brandColor = (brand) => {
     'Brand 1': '#fbbf24', // amber
     'Brand 2': '#3b82f6', // blue
     'Brand 3': '#22c55e', // green 500
-    'Brand 4': '#c6f6d5', // green 200
-    'Brand 5': '#16a34a', // green 600
-    'Brand 6': '#86efac', // green 300
+    'Brand 4': '#FFA500', // orange
+    'Brand 5': '#1ABC9C', // teal
+    'Brand 6': '#9B59B6', // purple
   };
   if (map[brand]) return map[brand];
   const fallback = ['#1d4ed8', '#9333ea', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#84cc16', '#f472b6'];
@@ -30,7 +30,7 @@ const brandColor = (brand) => {
 };
 
 // Animation constants (short, meaningful, ease-out)
-const ANIM = { duration: 400, easing: 'ease-out' };
+const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   if (!active || !payload || !payload.length) return null;
@@ -48,11 +48,11 @@ const CustomTooltip = ({ active, payload, label, viewType, total }) => {
 };
 
 const CustomLegend = ({ items }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
     {items.map((it) => (
       <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: '9999px', display: 'inline-block', background: it.color }} />
-        <span style={{ color: '#666', fontSize: 13 }}>{it.label}</span>
+        <span style={{ width: 12, height: 12, borderRadius: '9999px', display: 'inline-block', background: it.color }} />
+        <span style={{ color: '#666', fontSize: 14 }}>{it.label}</span>
       </div>
     ))}
   </div>
@@ -162,46 +162,50 @@ const MarketShare = ({ data, loading }) => {
         </div>
       </div>
 
-      <div style={{ width: '100%', height: 350 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Tooltip content={(props) => <CustomTooltip {...props} viewType={viewType} total={total} />} isAnimationActive={false} />
-            <Pie
-              data={displayRows}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={80}
-              outerRadius={110}
-              paddingAngle={2}
-              isAnimationActive
-              isUpdateAnimationActive
-              animationId={animId}
-              animationDuration={ANIM.duration}
-              animationEasing={ANIM.easing}
-              onMouseEnter={(_, idx) => setActiveIndex(idx)}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              {displayRows.map((entry, index) => (
-                <Cell
-                  key={`slice-${entry.label}`}
-                  fill={brandColor(entry.label)}
-                  stroke="#fff"
-                  strokeWidth={activeIndex === index ? 3 : 2}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <div style={{ flex: 1, height: 400 }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Tooltip content={(props) => <CustomTooltip {...props} viewType={viewType} total={total} />} isAnimationActive={false} />
+              <Pie
+                data={displayRows}
+                dataKey="value"
+                nameKey="label"
+                innerRadius={100}
+                outerRadius={150}
+                paddingAngle={2}
+                isAnimationActive
+                isUpdateAnimationActive
+                animationId={animId}
+                animationDuration={ANIM.duration}
+                animationEasing={ANIM.easing}
+                onMouseEnter={(_, idx) => setActiveIndex(idx)}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
+                {displayRows.map((entry, index) => (
+                  <Cell
+                    key={`slice-${entry.label}`}
+                    fill={brandColor(entry.label)}
+                    stroke="#fff"
+                    strokeWidth={activeIndex === index ? 3 : 2}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        
+        <div style={{ flex: 0, minWidth: 150 }}>
+          <CustomLegend items={legendItems} />
+        </div>
       </div>
 
       {/* Avoid overlay during filter changes; only use for first load */}
       {loading && !hasShownData && (
         <div className="chart-overlay">
-          <ChartSkeleton variant="donut" height={350} />
+          <ChartSkeleton variant="donut" height={400} />
         </div>
       )}
-
-      <CustomLegend items={legendItems} />
     </div>
   );
 };

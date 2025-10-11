@@ -44,8 +44,8 @@
 }
 
 .tab.active {
-  color: #4a90e2;
-  border-bottom-color: #4a90e2;
+  color: #333;
+  border-bottom-color: #F5C06A;
 }
 
 .loading {
