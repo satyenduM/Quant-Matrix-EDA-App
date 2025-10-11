@@ -26,25 +26,23 @@ An Exploratory Data Analysis (EDA) dashboard built with React (frontend) and Dja
 
 ## 🧠 Thought Process & Architecture
 
-1. **Data Caching Strategy**
-   - CSV loaded once into memory using singleton pattern
-   - Pandas DataFrame operations for efficient filtering and aggregation
-   - Suitable for datasets up to ~100MB
+1. **Data Handling**
+    - The server reads the CSV once and keeps it ready in memory so filtering feels fast.
+    - When you change filters, the server quickly sums and groups the relevant slice and sends only what the charts need.
 
-2. **API Design**
-   - RESTful endpoints with clear separation of concerns
-   - `/api/filters/` for filter options
-   - `/api/data/` for aggregated chart data
+2. **Backend Communication**
+    - One endpoint shares the available filter options.
+    - Another returns the chart data for your current selection.
+    - A small health endpoint lets us know the API is up.
 
-3. **Frontend State Management**
-   - React hooks for local state management
-   - Centralized filter state with useEffect for side effects
-   - Component-level chart rendering for optimal performance
+3. **UI Responsiveness**
+    - Filters are managed in one place.
+    - We wait a brief moment after you change a filter before fetching, so rapid clicks don't trigger extra requests.
+    - Each chart is its own component and updates only when its data changes.
 
-4. **Chart Library Choice**
-   - Recharts for declarative chart components
-   - Built-in React integration with responsive containers
-   - Consistent color scheme across all visualizations
+4. **Visualization Design**
+    - Charts use a clean, consistent style and resize to fit your screen.
+    - Colors stay consistent across views to make comparisons easy.
 
 ## 📊 Data Flow
 
