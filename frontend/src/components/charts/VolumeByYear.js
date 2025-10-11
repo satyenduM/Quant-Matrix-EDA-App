@@ -6,7 +6,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip
+  Tooltip,
+  Rectangle
 } from 'recharts';
 import './ChartStyles.css';
 import useTweenedNumber from './animations/useTweenedNumber';
@@ -43,8 +44,8 @@ const brandColor = (brand) => {
   return fallbackPalette[h % fallbackPalette.length];
 };
 
-// Animation constants for smooth, short, meaningful motion
-const ANIM = { duration: 200, easing: 'ease-out' };
+// Animation constants for smooth, very short, meaningful motion
+const ANIM = { duration: 100, easing: 'ease-out' };
 
 
 const CustomTooltip = ({ active, payload, hoveredKey }) => {
@@ -72,6 +73,7 @@ const CustomLegend = ({ items }) => (
 const VolumeByYear = ({ data, loading }) => {
   const raw = useMemo(() => data?.volumeByBrandYear ?? [], [data?.volumeByBrandYear]);
   const [hoveredKey, setHoveredKey] = useState(null);
+  const [hoveredBrand, setHoveredBrand] = useState(null);
 
   // Preserve last computed structures to avoid refresh/unmount
   const [lastBrands, setLastBrands] = useState([]);
@@ -118,7 +120,7 @@ const VolumeByYear = ({ data, loading }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
 
   // Animation key tied to data snapshot
@@ -186,9 +188,19 @@ const VolumeByYear = ({ data, loading }) => {
                 animationDuration={ANIM.duration}
                 animationEasing={ANIM.easing}
                 radius={i === 0 ? [8, 0, 0, 8] : i === (displayBrands.length - 1) ? [0, 8, 8, 0] : 0}
-                onMouseEnter={() => setHoveredKey(b)}
-                onMouseMove={() => setHoveredKey(b)}
-                onMouseLeave={() => setHoveredKey(null)}
+                shape={(props) => {
+                  const isActive = hoveredKey === b && hoveredBrand === props?.payload?.year;
+                  return (
+                    <Rectangle
+                      {...props}
+                      stroke={isActive ? '#000' : 'none'}
+                      strokeWidth={isActive ? 2 : 0}
+                    />
+                  );
+                }}
+                onMouseEnter={(data) => { setHoveredKey(b); setHoveredBrand(data?.payload?.year ?? null); }}
+                onMouseMove={(data) => { setHoveredKey(b); setHoveredBrand(data?.payload?.year ?? null); }}
+                onMouseLeave={() => { setHoveredKey(null); setHoveredBrand(null); }}
               />
             ))}
           </BarChart>

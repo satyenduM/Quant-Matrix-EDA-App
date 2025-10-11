@@ -21,7 +21,7 @@ function formatMillions(value) {
 }
 
 // Animation constants for smooth transitions
-const ANIM = { duration: 200, easing: 'ease-out' };
+const ANIM = { duration: 100, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -81,7 +81,7 @@ const MonthlyTrend = ({ data, loading }) => {
     return Math.ceil(paddedMax / step) * step || step;
   }, [currentValues]);
 
-  const animatedMax = useTweenedNumber(computedMax, 400, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
   const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Horizontal scroll handling + indicator

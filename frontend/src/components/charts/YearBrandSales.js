@@ -42,8 +42,8 @@ const yearColor = (year, index) => {
   return palette[index % palette.length];
 };
 
-// Animation constants (short, ease-out)
-const ANIM = { duration: 200, easing: 'ease-out' };
+// Animation constants (very short, ease-out)
+const ANIM = { duration: 100, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, hoveredKey }) => {
   if (!active || !payload || !payload.length) return null;
@@ -134,7 +134,7 @@ const YearBrandSales = ({ data, loading }) => {
     return Math.ceil(paddedMax / step) * step || step;
   }, [displayRows, displayYears]);
 
-  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
   const yDomain = [0, Math.max(0, Math.round(animatedMax))];
 
   // Stable animation id to smoothly transition between metrics and data changes
@@ -224,7 +224,7 @@ const YearBrandSales = ({ data, loading }) => {
                   return (
                     <Rectangle
                       {...props}
-                      stroke={isActive ? '#fff' : 'none'}
+                      stroke={isActive ? '#000' : 'none'}
                       strokeWidth={isActive ? 2 : 0}
                     />
                   );

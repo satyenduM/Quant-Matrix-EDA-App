@@ -29,8 +29,8 @@ const brandColor = (brand) => {
   return fallback[h % fallback.length];
 };
 
-// Animation constants (short, meaningful, ease-out)
-const ANIM = { duration: 200, easing: 'ease-out' };
+// Animation constants (very short, meaningful, ease-out)
+const ANIM = { duration: 100, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   if (!active || !payload || !payload.length) return null;

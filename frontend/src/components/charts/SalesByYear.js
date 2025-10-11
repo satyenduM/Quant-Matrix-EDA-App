@@ -6,7 +6,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip
+  Tooltip,
+  Rectangle
 } from 'recharts';
 import './ChartStyles.css';
 import ChartSkeleton from './ChartSkeleton';
@@ -45,8 +46,8 @@ const brandColor = (brand) => {
   return fallbackPalette[h % fallbackPalette.length];
 };
 
-// Animation constants for smooth, short, meaningful motion
-const ANIM = { duration: 200, easing: 'ease-out' };
+// Animation constants for smooth, very short, meaningful motion
+const ANIM = { duration: 100, easing: 'ease-out' };
 
 
 const CustomTooltip = ({ active, payload, label, order, hoveredKey }) => {
@@ -75,6 +76,7 @@ const CustomLegend = ({ items }) => (
 const SalesByYear = ({ data, loading }) => {
   const raw = useMemo(() => data?.salesByBrandYear ?? [], [data?.salesByBrandYear]);
   const [hoveredKey, setHoveredKey] = useState(null);
+  const [hoveredBrand, setHoveredBrand] = useState(null);
 
   // Preserve last computed structures to avoid refresh/unmount
   const [lastBrands, setLastBrands] = useState([]);
@@ -128,7 +130,7 @@ const SalesByYear = ({ data, loading }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, 80, 'easeOutCubic');
 
   // Legend items
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
@@ -203,9 +205,19 @@ const SalesByYear = ({ data, loading }) => {
                 radius={
                   i === 0 ? [8, 0, 0, 8] : i === (displayBrands.length - 1) ? [0, 8, 8, 0] : 0
                 }
-                onMouseEnter={() => setHoveredKey(b)}
-                onMouseMove={() => setHoveredKey(b)}
-                onMouseLeave={() => setHoveredKey(null)}
+                shape={(props) => {
+                  const isActive = hoveredKey === b && hoveredBrand === props?.payload?.year;
+                  return (
+                    <Rectangle
+                      {...props}
+                      stroke={isActive ? '#000' : 'none'}
+                      strokeWidth={isActive ? 2 : 0}
+                    />
+                  );
+                }}
+                onMouseEnter={(data) => { setHoveredKey(b); setHoveredBrand(data?.payload?.year ?? null); }}
+                onMouseMove={(data) => { setHoveredKey(b); setHoveredBrand(data?.payload?.year ?? null); }}
+                onMouseLeave={() => { setHoveredKey(null); setHoveredBrand(null); }}
               />
             ))}
           </BarChart>
