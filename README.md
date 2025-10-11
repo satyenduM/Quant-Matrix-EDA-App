@@ -1,5 +1,7 @@
 # EDA Dashboard Application
 
+**🚀 Deployed:** [https://quant-matrix-eda-app.vercel.app](https://quant-matrix-eda-app.vercel.app)
+
 An Exploratory Data Analysis (EDA) dashboard built with React (frontend) and Django 
 (backend) for analyzing FMCG retail data.
 
