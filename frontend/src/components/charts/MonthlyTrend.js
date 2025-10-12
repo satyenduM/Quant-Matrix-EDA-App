@@ -11,17 +11,9 @@ import {
 import './ChartStyles.css';
 import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
+import { formatMillions } from '../../utils/formatters';
+import { CHART_ANIMATION } from '../../constants/animations';
 
-function formatMillions(value) {
-  if (value == null || isNaN(value)) return '';
-  const millions = value / 1000000;
-  // Show 1 decimal when needed, otherwise integer
-  const formatted = millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1);
-  return `${formatted}M`;
-}
-
-// Animation constants for smooth transitions
-const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, selectedMetric }) => {
   if (active && payload && payload.length) {
@@ -245,8 +237,8 @@ const MonthlyTrend = ({ data, loading }) => {
                     isAnimationActive
                     isUpdateAnimationActive
                     animationId={animId}
-                    animationDuration={ANIM.duration}
-                    animationEasing={ANIM.easing}
+                    animationDuration={CHART_ANIMATION.duration}
+                    animationEasing={CHART_ANIMATION.easing}
                   />
                 </LineChart>
               </ResponsiveContainer>

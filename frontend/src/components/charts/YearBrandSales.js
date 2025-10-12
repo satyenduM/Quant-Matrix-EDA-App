@@ -12,38 +12,11 @@ import {
 import './ChartStyles.css';
 import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
+import { yearColor } from '../../utils/colorUtils';
+import { formatMillions } from '../../utils/formatters';
+import { sortBrands } from '../../utils/sortUtils';
+import { CHART_ANIMATION } from '../../constants/animations';
 
-// Helpers
-function formatMillions(value) {
-  if (value == null || isNaN(value)) return '';
-  const millions = value / 1000000;
-  const formatted = millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1);
-  return `${formatted}M`;
-}
-
-const sortBrands = (arr) => {
-  return [...arr].sort((a, b) => {
-    const na = /brand\s*(\d+)/i.exec(a);
-    const nb = /brand\s*(\d+)/i.exec(b);
-    if (na && nb) return parseInt(na[1], 10) - parseInt(nb[1], 10);
-    return a.localeCompare(b);
-  });
-};
-
-const yearColor = (year, index) => {
-  const map = {
-    2021: '#3b82f6', // blue
-    2022: '#22c55e', // green
-    2023: '#fbbf24', // amber
-    2024: '#a7f3d0', // light green
-  };
-  if (map[year]) return map[year];
-  const palette = ['#3b82f6', '#22c55e', '#fbbf24', '#a7f3d0', '#9333ea', '#06b6d4'];
-  return palette[index % palette.length];
-};
-
-// Animation constants (short, ease-out)
-const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, hoveredKey }) => {
   if (!active || !payload || !payload.length) return null;
@@ -138,7 +111,7 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
       });
       return row;
     });
-  }, [brands, years, source, selectedMetric]);
+  }, [brands, years, source, selectedMetric, dimKey]);
 
   useEffect(() => {
     if (!loading && rows.length > 0) setLastRows(rows);
@@ -243,8 +216,8 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
                 isAnimationActive
                 isUpdateAnimationActive
                 animationId={animId}
-                animationDuration={ANIM.duration}
-                animationEasing={ANIM.easing}
+                animationDuration={CHART_ANIMATION.duration}
+                animationEasing={CHART_ANIMATION.easing}
                 shape={(props) => {
                   const isActive = hoveredKey === String(y) && hoveredBrand === props?.payload?.label;
                   return (

@@ -2,8 +2,10 @@
 Data loader module for loading and caching the CSV dataset.
 """
 import pandas as pd
+import logging
 from django.conf import settings
-from functools import lru_cache
+
+logger = logging.getLogger(__name__)
 
 
 class DataLoader:
@@ -27,8 +29,9 @@ class DataLoader:
                 self._data['Volume'] = pd.to_numeric(self._data['Volume'], errors='coerce')
                 self._data['Year'] = pd.to_numeric(self._data['Year'], errors='coerce').astype('Int64')
                 self._data['Month'] = pd.to_numeric(self._data['Month'], errors='coerce').astype('Int64')
+                logger.info(f"Successfully loaded data with {len(self._data)} rows")
             except Exception as e:
-                print(f"Error loading data: {e}")
+                logger.error(f"Error loading data: {e}", exc_info=True)
                 self._data = pd.DataFrame()
         return self._data
     

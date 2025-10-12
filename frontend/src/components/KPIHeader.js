@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './KPIHeader.css';
-import useTweenedNumber from './charts/animations/useTweenedNumber';
+import { formatCurrency, formatVolume, formatPercentage } from '../utils/formatters';
 
 const KPIHeader = ({ data, loading }) => {
+  const [lastValidKpis, setLastValidKpis] = useState({
+    totalSalesValue: 0,
+    totalVolume: 0,
+    asp: 0,
+    yoyGrowth: 0
+  });
+
   // Calculate KPIs from the data
   const calculateKPIs = () => {
-    if (!data || loading) {
-      return {
-        totalSalesValue: 0,
-        totalVolume: 0,
-        asp: 0,
-        yoyGrowth: 0
-      };
+    if (!data) {
+      return lastValidKpis;
     }
 
     // Get all sales data
@@ -52,40 +54,15 @@ const KPIHeader = ({ data, loading }) => {
     };
   };
 
-  const formatCurrency = (value) => {
-    if (value >= 1e9) {
-      return `€${(value / 1e9).toFixed(1)}B`;
-    } else if (value >= 1e6) {
-      return `€${(value / 1e6).toFixed(1)}M`;
-    } else if (value >= 1e3) {
-      return `€${(value / 1e3).toFixed(1)}K`;
-    }
-    return `€${value.toFixed(0)}`;
-  };
-
-  const formatVolume = (value) => {
-    if (value >= 1e9) {
-      return `${(value / 1e9).toFixed(1)}B`;
-    } else if (value >= 1e6) {
-      return `${(value / 1e6).toFixed(1)}M`;
-    } else if (value >= 1e3) {
-      return `${(value / 1e3).toFixed(1)}K`;
-    }
-    return value.toFixed(0);
-  };
-
-  const formatPercentage = (value) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(1)}%`;
-  };
-
   const kpis = calculateKPIs();
-  
-  // Animate KPI values
-  const animatedSalesValue = useTweenedNumber(kpis.totalSalesValue, 300, 'easeOutCubic');
-  const animatedVolume = useTweenedNumber(kpis.totalVolume, 300, 'easeOutCubic');
-  const animatedASP = useTweenedNumber(kpis.asp, 300, 'easeOutCubic');
-  const animatedYoY = useTweenedNumber(kpis.yoyGrowth, 300, 'easeOutCubic');
+
+  // Update last valid KPIs when we have new data
+  useEffect(() => {
+    if (data && !loading) {
+      setLastValidKpis(calculateKPIs());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, loading]);
 
   if (loading && !data) {
     return (
@@ -109,23 +86,23 @@ const KPIHeader = ({ data, loading }) => {
       <div className="kpi-container">
         <div className="kpi-card">
           <div className="kpi-title">Total Sales Value</div>
-          <div className="kpi-value">{formatCurrency(animatedSalesValue)}</div>
+          <div className="kpi-value">{formatCurrency(kpis.totalSalesValue)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">Total Volume</div>
-          <div className="kpi-value">{formatVolume(animatedVolume)}</div>
+          <div className="kpi-value">{formatVolume(kpis.totalVolume)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">ASP</div>
-          <div className="kpi-value">€{animatedASP.toFixed(2)}</div>
+          <div className="kpi-value">€{kpis.asp.toFixed(2)}</div>
         </div>
         
         <div className="kpi-card">
           <div className="kpi-title">YoY Growth</div>
           <div className={`kpi-value ${kpis.yoyGrowth >= 0 ? 'positive' : 'negative'}`}>
-            {formatPercentage(animatedYoY)}
+            {formatPercentage(kpis.yoyGrowth)}
           </div>
         </div>
       </div>

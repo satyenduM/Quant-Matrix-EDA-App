@@ -12,40 +12,11 @@ import {
 import './ChartStyles.css';
 import useTweenedNumber from './animations/useTweenedNumber';
 import ChartSkeleton from './ChartSkeleton';
+import { brandColor } from '../../utils/colorUtils';
+import { formatMillions, formatMillionsWithSpace } from '../../utils/formatters';
+import { sortBrands } from '../../utils/sortUtils';
+import { CHART_ANIMATION, AXIS_ANIMATION_DURATION } from '../../constants/animations';
 
-// Helpers (same style as SalesByYear)
-const toMillions = (v) => v / 1_000_000;
-const xFormat = (v) => `${toMillions(v) % 1 === 0 ? toMillions(v).toFixed(0) : toMillions(v).toFixed(1)} M`;
-const xFormatCompact = (v) => `${toMillions(v) % 1 === 0 ? toMillions(v).toFixed(0) : toMillions(v).toFixed(1)}M`;
-
-const sortBrands = (arr) => {
-  return [...arr].sort((a, b) => {
-    const na = /brand\s*(\d+)/i.exec(a);
-    const nb = /brand\s*(\d+)/i.exec(b);
-    if (na && nb) return parseInt(na[1], 10) - parseInt(nb[1], 10);
-    return a.localeCompare(b);
-  });
-};
-
-const brandColor = (brand) => {
-  const map = {
-    'Brand 1': '#fbbf24', // amber
-    'Brand 2': '#3b82f6', // blue
-    'Brand 3': '#22c55e', // green 500
-    'Brand 4': '#FFA500', // orange
-    'Brand 5': '#1ABC9C', // teal
-    'Brand 6': '#9B59B6', // purple
-  };
-  if (map[brand]) return map[brand];
-  // Stable fallback using a simple hash of the brand name
-  const fallbackPalette = ['#1d4ed8', '#9333ea', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#84cc16', '#f472b6'];
-  let h = 0;
-  for (let i = 0; i < brand.length; i++) h = (h * 31 + brand.charCodeAt(i)) >>> 0;
-  return fallbackPalette[h % fallbackPalette.length];
-};
-
-// Animation constants for smooth, short, meaningful motion
-const ANIM = { duration: 200, easing: 'ease-out' };
 
 
 const CustomTooltip = ({ active, payload, hoveredKey }) => {
@@ -54,7 +25,7 @@ const CustomTooltip = ({ active, payload, hoveredKey }) => {
   return (
     <div className="chart-tooltip" style={{ background: '#111827', color: '#fff', padding: 8, borderRadius: 8 }}>
       <div style={{ fontSize: 12, opacity: 0.8 }}>{target.name || target.dataKey}</div>
-      <div style={{ fontSize: 16, fontWeight: 600 }}>{xFormatCompact(target.value)}</div>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>{formatMillions(target.value)}</div>
     </div>
   );
 };
@@ -136,7 +107,7 @@ const VolumeByYear = ({ data, loading, viewMode }) => {
   }, [displayRows, displayBrands]);
 
   // Animate axis max for smooth auto-scaling
-  const animatedMax = useTweenedNumber(computedMax, 150, 'easeOutCubic');
+  const animatedMax = useTweenedNumber(computedMax, AXIS_ANIMATION_DURATION, 'easeOutCubic');
   const legendItems = useMemo(() => (displayBrands || []).map((b) => ({ label: b, color: brandColor(b) })), [displayBrands]);
 
   // Animation key tied to data snapshot
@@ -170,7 +141,7 @@ const VolumeByYear = ({ data, loading, viewMode }) => {
             {/* X and Y axes with solid light grey lines */}
             <XAxis
               type="number"
-              tickFormatter={xFormat}
+              tickFormatter={formatMillionsWithSpace}
               domain={[0, Math.max(0, Math.round(animatedMax))]}
               tickLine={false}
               axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
@@ -201,8 +172,8 @@ const VolumeByYear = ({ data, loading, viewMode }) => {
                 isAnimationActive
                 isUpdateAnimationActive
                 animationId={animId}
-                animationDuration={ANIM.duration}
-                animationEasing={ANIM.easing}
+                animationDuration={CHART_ANIMATION.duration}
+                animationEasing={CHART_ANIMATION.easing}
                 radius={i === 0 ? [8, 0, 0, 8] : i === (displayBrands.length - 1) ? [0, 8, 8, 0] : 0}
                 shape={(props) => {
                   const isActive = hoveredKey === b && hoveredBrand === props?.payload?.year;

@@ -8,29 +8,10 @@ import {
 } from 'recharts';
 import './ChartStyles.css';
 import ChartSkeleton from './ChartSkeleton';
+import { brandColor } from '../../utils/colorUtils';
+import { formatMillions } from '../../utils/formatters';
+import { CHART_ANIMATION } from '../../constants/animations';
 
-// Helpers consistent with other charts
-const toMillions = (v) => v / 1_000_000;
-const formatMillionsNoSpace = (v) => `${toMillions(v) % 1 === 0 ? toMillions(v).toFixed(0) : toMillions(v).toFixed(1)}M`;
-
-// Stable brand colors used across charts
-const brandColor = (brand) => {
-  const map = {
-    'Brand 1': '#fbbf24', // amber
-    'Brand 2': '#3b82f6', // blue
-    'Brand 3': '#22c55e', // green 500
-    'Brand 4': '#FFA500', // orange
-    'Brand 5': '#1ABC9C', // teal
-    'Brand 6': '#9B59B6', // purple
-  };
-  if (map[brand]) return map[brand];
-  const fallback = ['#1d4ed8', '#9333ea', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#84cc16', '#f472b6'];
-  let h = 0; for (let i = 0; i < brand.length; i++) h = (h * 31 + brand.charCodeAt(i)) >>> 0;
-  return fallback[h % fallback.length];
-};
-
-// Animation constants (short, meaningful, ease-out)
-const ANIM = { duration: 200, easing: 'ease-out' };
 
 const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   if (!active || !payload || !payload.length) return null;
@@ -38,7 +19,7 @@ const CustomTooltip = ({ active, payload, label, viewType, total }) => {
   const brand = p.name;
   const value = p.value || 0;
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-  const valueStr = viewType === 'sales' ? formatMillionsNoSpace(value) : `${formatMillionsNoSpace(value)} KG`;
+  const valueStr = viewType === 'sales' ? formatMillions(value) : `${formatMillions(value)} KG`;
   return (
     <div className="chart-tooltip">
       <div className="chart-tooltip-date">{brand}</div>
@@ -118,12 +99,6 @@ const MarketShare = ({ data, loading, viewMode }) => {
   const total = useMemo(() => (displayRows || []).reduce((s, r) => s + (r.value || 0), 0), [displayRows]);
   const legendItems = useMemo(() => (displayRows || []).map(r => ({ label: r.label, color: brandColor(r.label) })), [displayRows]);
 
-  // Trigger animation on data/metric change without remounting the chart
-  const animId = useMemo(() => {
-    const sig = (displayRows || []).map(r => `${r.label}:${r.value}`).join('|');
-    return `${viewType}::${sig}`;
-  }, [displayRows, viewType]);
-
   // Track whether we've shown data at least once
   const [hasShownData, setHasShownData] = useState(false);
   useEffect(() => {
@@ -200,10 +175,9 @@ const MarketShare = ({ data, loading, viewMode }) => {
                 outerRadius={150}
                 paddingAngle={2}
                 isAnimationActive
-                isUpdateAnimationActive
-                animationId={animId}
-                animationDuration={ANIM.duration}
-                animationEasing={ANIM.easing}
+                animationId={`${viewMode}-${viewType}`}
+                animationDuration={CHART_ANIMATION.duration}
+                animationEasing={CHART_ANIMATION.easing}
                 onMouseEnter={(_, idx) => setActiveIndex(idx)}
                 onMouseLeave={() => setActiveIndex(null)}
               >

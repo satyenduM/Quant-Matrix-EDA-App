@@ -23,8 +23,9 @@ An Exploratory Data Analysis (EDA) dashboard built with React (frontend) and Dja
 - **Interactive Filtering**: Multi-select dropdowns for Brand, Pack Type, PPG, Channel, and Year
 - **Chart Types**: Sales by Year, Volume by Year, Year-wise Sales, Monthly Trend, Market Share
 - **Real-time Updates**: Charts automatically refresh when filters change
+- **Clean Code**: Shared utilities eliminate duplication across components
 
-## 🧠 Thought Process & Architecture
+## 🧠 Thought Process
 
 1. **Data Handling**
     - The server reads the CSV once and keeps it ready in memory so filtering feels fast.
@@ -33,12 +34,11 @@ An Exploratory Data Analysis (EDA) dashboard built with React (frontend) and Dja
 2. **Backend Communication**
     - One endpoint shares the available filter options.
     - Another returns the chart data for your current selection.
-    - A small health endpoint lets us know the API is up.
 
 3. **UI Responsiveness**
     - Filters are managed in one place.
     - We wait a brief moment after you change a filter before fetching, so rapid clicks don't trigger extra requests.
-    - Each chart is its own component and updates only when its data changes.
+    - Each chart has its own component and updates only when its data changes.
 
 4. **Visualization Design**
     - Charts use a clean, consistent style and resize to fit your screen.
@@ -72,11 +72,12 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 
-# Frontend (new terminal)
+# Frontend
 cd frontend
 npm install
 npm start
 ```
+
 ## 🔧 Project Structure
 
 ```
@@ -84,14 +85,12 @@ npm start
 │   ├── api/                    # Django REST API
 │   │   ├── views.py           # API endpoints
 │   │   ├── data_loader.py     # Data caching & processing
+│   │   ├── utils.py           # Helper functions
 │   │   ├── urls.py            # URL routing
-│   │   ├── models.py          # Database models
-│   │   ├── admin.py           # Admin interface
-│   │   └── tests.py           # Unit tests
+│   │   └── ...
 │   ├── eda_project/           # Django settings
 │   │   ├── settings.py        # Django configuration
 │   │   ├── urls.py            # Main URL routing
-│   │   ├── wsgi.py            # WSGI config
 │   │   └── Technical Evaluation.csv  # Dataset
 │   ├── manage.py              # Django CLI
 │   └── requirements.txt       # Python dependencies
@@ -104,18 +103,24 @@ npm start
 │   │   │   │   ├── YearBrandSales.js
 │   │   │   │   ├── MonthlyTrend.js
 │   │   │   │   ├── MarketShare.js
-│   │   │   │   ├── ChartSkeleton.js
-│   │   │   │   └── animations/
+│   │   │   │   └── ...
 │   │   │   ├── Filters.js     # Filter controls
 │   │   │   ├── Dashboard.js   # Layout container
 │   │   │   ├── Header.js      # Navigation header
-│   │   │   ├── MultiSelect.js # Dropdown component
 │   │   │   └── KPIHeader.js   # KPI display
+│   │   ├── services/          # API client
+│   │   │   └── api.js         # Centralized API calls
+│   │   ├── utils/             # Shared utilities
+│   │   │   ├── colorUtils.js  # Color mapping
+│   │   │   ├── formatters.js  # Number formatting
+│   │   │   └── sortUtils.js   # Sorting helpers
+│   │   ├── hooks/             # Custom React hooks
+│   │   │   ├── useDebounce.js
+│   │   │   └── usePreserveLastData.js
+│   │   ├── constants/         # App constants
+│   │   │   └── animations.js  # Animation settings
 │   │   ├── App.js            # Main application
-│   │   ├── App.css           # App styles
-│   │   ├── index.js          # React entry point
-│   │   └── index.css         # Global styles
-│   ├── public/               # Static files
+│   │   └── ...
 │   └── package.json          # Node dependencies
 └── README.md                 # Documentation
 ```

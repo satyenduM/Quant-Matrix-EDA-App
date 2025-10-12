@@ -7,6 +7,7 @@ import YearBrandSales from './charts/YearBrandSales';
 import MonthlyTrend from './charts/MonthlyTrend';
 import MarketShare from './charts/MarketShare';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from 'recharts';
+import { brandColor } from '../utils/colorUtils';
 
 const Dashboard = ({ data, loading, viewMode }) => {
   const [kpiTip, setKpiTip] = React.useState({ show: false, x: 0, y: 0, row: '', col: '', value: null });
@@ -17,21 +18,6 @@ const Dashboard = ({ data, loading, viewMode }) => {
       </div>
     );
   }
-
-  const brandColor = (brand) => {
-    const map = {
-      'Brand 1': '#fbbf24',
-      'Brand 2': '#3b82f6',
-      'Brand 3': '#22c55e',
-      'Brand 4': '#FFA500',
-      'Brand 5': '#1ABC9C',
-      'Brand 6': '#9B59B6',
-    };
-    if (map[brand]) return map[brand];
-    const palette = ['#1d4ed8', '#9333ea', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#84cc16', '#f472b6'];
-    let h = 0; for (let i = 0; i < brand.length; i++) h = (h * 31 + brand.charCodeAt(i)) >>> 0;
-    return palette[h % palette.length];
-  };
 
   const MsTrendTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
