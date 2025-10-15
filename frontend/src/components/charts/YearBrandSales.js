@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { usePreserveLastData } from '../../hooks/usePreserveLastData';
 import {
   ResponsiveContainer,
   BarChart,
@@ -47,10 +48,6 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
   const [hoveredKey, setHoveredKey] = useState(null);
   const [hoveredBrand, setHoveredBrand] = useState(null);
 
-  // Preserve last computed structures to avoid refresh/unmount
-  const [lastYears, setLastYears] = useState([]);
-  const [lastRows, setLastRows] = useState([]);
-
   // Close dropdown on outside click
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -96,10 +93,6 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
   }, [source, view, dimKey]);
   const years = useMemo(() => [...new Set(source.map(d => d.Year))].sort(), [source]);
 
-  useEffect(() => {
-    if (!loading && years.length > 0) setLastYears(years);
-  }, [loading, years]);
-
   // Rows for recharts
   const rows = useMemo(() => {
     if (brands.length === 0 || years.length === 0) return [];
@@ -113,12 +106,9 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
     });
   }, [brands, years, source, selectedMetric, dimKey]);
 
-  useEffect(() => {
-    if (!loading && rows.length > 0) setLastRows(rows);
-  }, [loading, rows]);
-
-  const displayYears = years.length > 0 ? years : lastYears;
-  const displayRows = rows.length > 0 ? rows : lastRows;
+  // Preserve last valid data to avoid flickering
+  const displayYears = usePreserveLastData(years, loading);
+  const displayRows = usePreserveLastData(rows, loading);
 
   // Dynamic Y-axis scaling based on current filtered data
   const computedMax = useMemo(() => {

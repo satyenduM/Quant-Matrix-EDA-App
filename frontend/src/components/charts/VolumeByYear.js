@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { usePreserveLastData } from '../../hooks/usePreserveLastData';
 import {
   ResponsiveContainer,
   BarChart,
@@ -58,24 +59,12 @@ const VolumeByYear = ({ data, loading, viewMode }) => {
   const [hoveredKey, setHoveredKey] = useState(null);
   const [hoveredBrand, setHoveredBrand] = useState(null);
 
-  // Preserve last computed structures to avoid refresh/unmount
-  const [lastBrands, setLastBrands] = useState([]);
-  const [lastYears, setLastYears] = useState([]);
-  const [lastRows, setLastRows] = useState([]);
-
   const dimKey = view === 'brand' ? 'Brand' : view === 'packType' ? 'PackType' : view === 'ppg' ? 'PPG' : 'Combo';
   const brands = useMemo(() => {
     const labels = [...new Set(raw.map(d => (d[dimKey] ?? [d.Brand, d.PackType, d.PPG].filter(Boolean).join(' · '))))];
     return view === 'brand' ? sortBrands(labels) : labels.sort();
   }, [raw, view, dimKey]);
   const years = useMemo(() => [...new Set(raw.map(d => d.Year))].sort(), [raw]);
-
-  useEffect(() => {
-    if (!loading && brands.length > 0) setLastBrands(brands);
-  }, [loading, brands]);
-  useEffect(() => {
-    if (!loading && years.length > 0) setLastYears(years);
-  }, [loading, years]);
 
   const rows = useMemo(() => {
     if (years.length === 0 || brands.length === 0) return [];
@@ -89,13 +78,10 @@ const VolumeByYear = ({ data, loading, viewMode }) => {
     });
   }, [raw, years, brands, dimKey]);
 
-  useEffect(() => {
-    if (!loading && rows.length > 0) setLastRows(rows);
-  }, [loading, rows]);
-
-  const displayBrands = brands.length > 0 ? brands : lastBrands;
-  const displayYears = years.length > 0 ? years : lastYears;
-  const displayRows = rows.length > 0 ? rows : lastRows;
+  // Preserve last valid data to avoid flickering
+  const displayBrands = usePreserveLastData(brands, loading);
+  const displayYears = usePreserveLastData(years, loading);
+  const displayRows = usePreserveLastData(rows, loading);
 
   // Dynamic axis scaling based on current filtered data
   const computedMax = useMemo(() => {

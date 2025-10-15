@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { usePreserveLastData } from '../../hooks/usePreserveLastData';
 import {
   ResponsiveContainer,
   PieChart,
@@ -89,12 +90,7 @@ const MarketShare = ({ data, loading, viewMode }) => {
   }, [source, view, viewType]);
 
   // Preserve last non-empty rows to avoid unmounting on loading
-  const [lastRows, setLastRows] = useState([]);
-  useEffect(() => {
-    if (!loading && rows.length > 0) setLastRows(rows);
-  }, [loading, rows]);
-
-  const displayRows = rows.length > 0 ? rows : lastRows;
+  const displayRows = usePreserveLastData(rows, loading);
 
   const total = useMemo(() => (displayRows || []).reduce((s, r) => s + (r.value || 0), 0), [displayRows]);
   const legendItems = useMemo(() => (displayRows || []).map(r => ({ label: r.label, color: brandColor(r.label) })), [displayRows]);
