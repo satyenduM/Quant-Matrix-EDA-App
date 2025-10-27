@@ -45,7 +45,7 @@ export const formatVolume = (value) => {
   return value.toFixed(0);
 };
 
-// Format percentage values with sign
+// Format percentage values
 export const formatPercentage = (value) => {
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;

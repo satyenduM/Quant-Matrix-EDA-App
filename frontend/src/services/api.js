@@ -5,8 +5,10 @@ import axios from 'axios';
  * Tries primary URL first, then falls back to secondary URL
  */
 
-const PRIMARY_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const FALLBACK_API_URL = process.env.REACT_APP_API_URL_FALLBACK || 'https://quant-matrix-eda-app-production.up.railway.app';
+const PRIMARY_API_URL = 'http://localhost:8000';
+const FALLBACK_API_URL = 'none';
+
+// https://quant-matrix-eda-app-production.up.railway.app
 
 class ApiClient {
   constructor() {

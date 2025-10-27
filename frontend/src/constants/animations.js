@@ -1,5 +1,5 @@
 /**
- * Animation constants for consistent motion across charts
+ * Animation constants
  */
 
 export const CHART_ANIMATION = {

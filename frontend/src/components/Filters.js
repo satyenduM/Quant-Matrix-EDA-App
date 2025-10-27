@@ -1,4 +1,3 @@
-import React from 'react';
 import './Filters.css';
 import MultiSelect from './MultiSelect';
 
