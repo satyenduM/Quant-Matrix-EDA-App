@@ -6,7 +6,7 @@ import axios from 'axios';
  */
 
 const PRIMARY_API_URL = 'http://localhost:8000';
-const FALLBACK_API_URL = 'none';
+const FALLBACK_API_URL = 'https://quant-matrix-eda-app-production.up.railway.app';
 
 // https://quant-matrix-eda-app-production.up.railway.app
 
