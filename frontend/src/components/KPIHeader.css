@@ -2,6 +2,43 @@
   margin-bottom: 5px;
 }
 
+.kpi-header-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.metric-toggle {
+  display: inline-flex;
+  background-color: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn {
+  padding: 8px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toggle-btn:hover {
+  color: #374151;
+}
+
+.toggle-btn.active {
+  background-color: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .kpi-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -90,6 +127,15 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .kpi-header-controls {
+    margin-bottom: 12px;
+  }
+
+  .toggle-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+
   .kpi-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;

@@ -8,7 +8,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Rectangle
+  Rectangle,
+  LabelList
 } from 'recharts';
 import './ChartStyles.css';
 import useTweenedNumber from './animations/useTweenedNumber';
@@ -189,7 +190,7 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
 
       <div style={{ width: '100%', height: 320 }}>
         <ResponsiveContainer>
-          <BarChart data={displayRows} margin={{ top: 10, right: 10, bottom: 20, left: 0 }}>
+          <BarChart data={displayRows} margin={{ top: 30, right: 10, bottom: 20, left: 0 }}>
             <CartesianGrid stroke="#eaeaea" vertical horizontal={true} />
             <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#666' }} tickLine={false} axisLine={{ stroke: '#eee' }} />
             <YAxis tickFormatter={formatMillions} tick={{ fontSize: 12, fill: '#666' }} axisLine={false} tickLine={false} domain={yDomain} />
@@ -221,7 +222,15 @@ const YearBrandSales = ({ data, loading, viewMode }) => {
                 onMouseEnter={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.label ?? null); }}
                 onMouseMove={(data) => { setHoveredKey(String(y)); setHoveredBrand(data?.payload?.label ?? null); }}
                 onMouseLeave={() => { setHoveredKey(null); setHoveredBrand(null); }}
-              />
+              >
+                <LabelList
+                  dataKey={String(y)}
+                  position="top"
+                  formatter={formatMillions}
+                  style={{ fontSize: 11, fill: '#666', fontWeight: 500 }}
+                  isAnimationActive={false}
+                />
+              </Bar>
             ))}
           </BarChart>
         </ResponsiveContainer>

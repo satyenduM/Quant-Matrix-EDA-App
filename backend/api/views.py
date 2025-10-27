@@ -83,8 +83,17 @@ def get_filtered_data(request):
 
         # 5c. Monthly brand sales (for potential market share trends)
         monthly_brand_sales = df.groupby(['Year', 'Month', 'YearMonth', 'Brand']).agg({
-            'SalesValue': 'sum'
+            'SalesValue': 'sum',
+            'Volume': 'sum',
+            'date': 'first'
         }).reset_index().sort_values(['Year', 'Month', 'Brand'])
+        
+        # 5d. Monthly channel sales
+        monthly_channel_sales = df.groupby(['Year', 'Month', 'YearMonth', 'Channel']).agg({
+            'SalesValue': 'sum',
+            'Volume': 'sum',
+            'date': 'first'
+        }).reset_index().sort_values(['Year', 'Month', 'Channel'])
         
         # 6. Market Share by Brand
         market_share_sales = aggregate_market_share(df, 'Brand')
@@ -140,10 +149,29 @@ def get_filtered_data(request):
 
         # Basic correlation matrix between available numeric fields
         correlation_pairs = calculate_general_correlation(df)
-        
+
+        # KPI summary stats computed over the filtered dataset
+        kpi_stats = {
+            'value': {
+                'sum': float(df['SalesValue'].sum()),
+                'average': float(df['SalesValue'].mean()) if len(df) > 0 else 0.0,
+                'min': float(df['SalesValue'].min()) if len(df) > 0 else 0.0,
+                'max': float(df['SalesValue'].max()) if len(df) > 0 else 0.0,
+                'count': int(df['SalesValue'].count()),
+            },
+            'volume': {
+                'sum': float(df['Volume'].sum()),
+                'average': float(df['Volume'].mean()) if len(df) > 0 else 0.0,
+                'min': float(df['Volume'].min()) if len(df) > 0 else 0.0,
+                'max': float(df['Volume'].max()) if len(df) > 0 else 0.0,
+                'count': int(df['Volume'].count()),
+            }
+        }
+
         return Response({
             'salesByYear': clean_data(sales_by_year).to_dict('records'),
             'volumeByYear': clean_data(volume_by_year).to_dict('records'),
+            'kpiStats': kpi_stats,
 
             'salesByBrandYear': clean_data(sales_by_brand_year).to_dict('records'),
             'volumeByBrandYear': clean_data(volume_by_brand_year).to_dict('records'),
@@ -159,6 +187,7 @@ def get_filtered_data(request):
             'monthlyTrend': clean_data(monthly_trend).to_dict('records'),
             'kpiCorrelation': kpi_correlation,
             'monthlyBrandSales': clean_data(monthly_brand_sales).to_dict('records'),
+            'monthlyChannelSales': clean_data(monthly_channel_sales).to_dict('records'),
 
             'marketShareSales': clean_data(market_share_sales).to_dict('records'),
             'marketSharePackType': clean_data(market_share_packtype).to_dict('records'),
